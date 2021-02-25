@@ -32,14 +32,15 @@ elif len(sys.argv)==3:
     else:
         projects=default_projects
         outname=term
-elif len(sys.argv==4): 
+elif len(sys.argv)==4: 
     term=sys.argv[2]
     if "," in term:
-        project=[i for i in sys.argv[2].split(",") if len(i)]
+        projects=[i for i in sys.argv[2].split(",") if len(i)]
         outname=sys.argv[3]
     else: ## 省略了projects这一项
         outname=sys.argv[2]
         idname=sys.argv[3]
+        projects=default_projects
 else:
     projects = [i for i in sys.argv[2].split(",") if len(i)]
     outname=sys.argv[3]
