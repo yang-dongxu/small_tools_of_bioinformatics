@@ -1,5 +1,6 @@
 import os
 import sys
+import re
 from copy import deepcopy
 
 usage="##usage: python {__file__} log1,log2,log3...  [project1,project2,project3...] [outname]\n## if outname is std, out will print in the tsv format, else write tsv in the given file, default is std"
@@ -32,23 +33,29 @@ else:
 
 # def used funtions
 def extract_num(line):
-    return line.split("|")[-1].strip()
+    return [int(i) for i in re.findall("(\d\d+)",line)]
 
-def process(name,project):
+def process(name,project,header):
     with open(name) as f:
         data=f.read().splitlines()
-    total_line,unique_line, multi_line= data[5],data[8],data[23]
-    total=extract_num(total_line)
-    unique=extract_num(unique_line)
-    multi=extract_num(multi_line)
-    result={"project":project,"total_reads":total,"uniq_mapping_reads":unique,"multi_mapping_reads":multi}
-    return deepcopy(result)
+    total,cds,utr_5,utr_3,intron= data[1],data[5],data[6],data[7],data[8]
+    values=[extract_num(i) for i in (total,cds,utr_5,utr_3,intron)]
+    total_tags=values[0][0]
+    extron_tags=values[1][1]+values[2][1]+values[3][1]
+    intron_tags=values[4][1]
+
+    exon_ratio=extron_tags/total_tags
+    intron_ratio=intron_tags/total_tags
+    results=[project,total_tags,extron_tags,intron_tags,exon_ratio,intron_ratio]
+    result_dict={key:value for key,value in zip(header,results)}
+    return deepcopy(result_dict)
 
 
 # start process
-result=[process(name,project) for name,project in zip(logs,projects)]
+header=["project","total_tags","Extron_tags","Intron_tags","exon_ratio","intron_ratio"]
 
-header=["project","total_reads","uniq_mapping_reads","multi_mapping_reads"]
+result=[process(name,project,header) for name,project in zip(logs,projects)]
+
 line="\t".join(["{"+i+"}" for i in header])+"\n"
 
 format_result="\t".join(header)+"\n"
