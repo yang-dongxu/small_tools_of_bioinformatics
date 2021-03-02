@@ -14,19 +14,19 @@ log_name=sys.argv[1]
 outname=sys.argv[2]
 
 mapping_part=sys.argv[3] if len(sys.argv) >=4 else "bowtie2"
-peakcalling_part=sys.argv[4] if len(sys.argv) >=5 else "bowtie2"
+peakcalling_part=sys.argv[4] if len(sys.argv) >=5 else "peakcalling"
 
 f=open(log_name)
 text=f.read()
 f.close()
 
 f=open(outname,'w')
-columns=["project","total_reads","uniq_mapping_reads","multi_mapping_reads","filtered_reads"]
+columns=["project","total_reads","uniq_mapping_reads","multi_mapping_reads","filtered_reads","mapping_ratio"]
 f.write(",".join(columns)+"\n")
 
 # %%
-aligment_pattern=f"##### start (\S+) {mapping_part} #####[\s\S]+?(\d+ reads[\s\S]+?alignment rate)\s##### stop (\S+) {mapping_part} #####"
-macs_pattern="###### start {project} {peakcalling_part} ######([\s\S]+?)###### stop {project} {peakcalling_part} ######"
+aligment_pattern=f"#{{5}}\s*start\s*(\S+)\s*{mapping_part}\s*#{{5}}[\s\S]+?(\d+ reads[\s\S]+?alignment rate)\s#{{5}}\s*stop (\S+) {mapping_part}\s*#{{5}}"
+macs_pattern="#{{5}}\s*start\s*{project}\s*{peakcalling_part}\s*#{{5}}([\s\S]+?)#{{5}}\s*stop\s*{project}\s*{peakcalling_part}\s*#{{5}}"
 # %%
 all_mapping_results=re.findall(aligment_pattern,text)
 for p1,body,p2 in all_mapping_results:
@@ -48,7 +48,8 @@ for p1,body,p2 in all_mapping_results:
     total_reads=parts[0].split('\n')[0].strip().split()[0]
     uniq_reads=parts[0].split('\n')[3].strip().split()[0]
     dup_reads=parts[0].split('\n')[4].strip().split()[0]
-    result="{project},{total},{unique},{dup},{filter_unique}\n".format(project=p1,total=total_reads,unique=uniq_reads,dup=dup_reads,filter_unique=filtered_reads)
+    mapping_ratio=(int(uniq_reads)+int(dup_reads))/int(total_reads)
+    result="{project},{total},{unique},{dup},{filter_unique},{mapping_ratio}\n".format(project=p1,total=total_reads,unique=uniq_reads,dup=dup_reads,filter_unique=filtered_reads,mapping_ratio=mapping_ratio)
     f.write(result)
 
 f.close()
