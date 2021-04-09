@@ -55,12 +55,14 @@ genePredToGtf -utr file ${genomeVersion}.refGene.genePredExt ${genomeVersion}.re
 genePredToBed ${genomeVersion}.refGene.genePredExt ${genomeVersion}.refGene.bed
 
 # refGene with out random chromsomes
-cat  ${genomeVersion}.refGene.txt | awk 'index($3,"_")==0{print $0}' > ${genomeVersion}.refGene.main.txt
+cat  ${genomeVersion}.refGene.txt | awk 'index($3,"_")==0{print $0}' | sort -k3,3 -k5,5n  > ${genomeVersion}.refGene.main.txt
 cut -f 2-11 ${genomeVersion}.refGene.main.txt > ${genomeVersion}.refGene.main.genePred
 cut -f 2-16 ${genomeVersion}.refGene.main.txt > ${genomeVersion}.refGene.main.genePredExt
 genePredToGtf -utr file ${genomeVersion}.refGene.genePredExt ${genomeVersion}.refGene.main.gtf
 genePredToBed ${genomeVersion}.refGene.main.genePredExt ${genomeVersion}.refGene.main.bed
 
+#get table of transcipt id to gene name
+cat ${genomeVersion}.refGene.txt | cut -f 2,13  >  ${genomeVersion}.refGene.transcript_to_gene.tsv
 
 # prepare promoter with 2k of tss
 cat  ${genomeVersion}.refGene.bed | awk '{if ($6 == "+") {start=$2-2000;end=$2+2000;} else if ($6 == "-" ) {start=$3-2000;end=$3+2000;}else {start="Start";end="End"};printf("%s\t%s\t%s\t%s\t%s\t%s\n",$1,start,end,$4,$5,$6)}' | awk '{if ($5 != "Strand") {if ($2>0) start=$2;else {start=0};} else start="Start" ; printf("%s\t%s\t%s\t%s\t%s\t%s\n",$1,start,$3,$4,$5,$6)}' | sort -k1,1 -k2,2n > ${genomeVersion}.refGene.promoter_2k.bed
