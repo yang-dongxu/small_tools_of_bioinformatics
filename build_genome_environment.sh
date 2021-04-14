@@ -68,6 +68,34 @@ cat ${genomeVersion}.refGene.txt | cut -f 2,13  >  ${genomeVersion}.refGene.tran
 cat  ${genomeVersion}.refGene.bed | awk '{if ($6 == "+") {start=$2-2000;end=$2+2000;} else if ($6 == "-" ) {start=$3-2000;end=$3+2000;}else {start="Start";end="End"};printf("%s\t%s\t%s\t%s\t%s\t%s\n",$1,start,end,$4,$5,$6)}' | awk '{if ($5 != "Strand") {if ($2>0) start=$2;else {start=0};} else start="Start" ; printf("%s\t%s\t%s\t%s\t%s\t%s\n",$1,start,$3,$4,$5,$6)}' | sort -k1,1 -k2,2n > ${genomeVersion}.refGene.promoter_2k.bed
 cat  ${genomeVersion}.refGene.main.bed | awk '{if ($6 == "+") {start=$2-2000;end=$2+2000;} else if ($6 == "-" ) {start=$3-2000;end=$3+2000;}else {start="Start";end="End"};printf("%s\t%s\t%s\t%s\t%s\t%s\n",$1,start,end,$4,$5,$6)}' | awk '{if ($5 != "Strand") {if ($2>0) start=$2;else {start=0};} else start="Start" ; printf("%s\t%s\t%s\t%s\t%s\t%s\n",$1,start,$3,$4,$5,$6)}' | sort -k1,1 -k2,2n > ${genomeVersion}.refGene.main.promoter_2k.bed
 
+
+# prepare repeats annotations
+url="https://hgdownload.soe.ucsc.edu/goldenPath/${genomeVersion}/database/rmsk.txt.gz"
+wget -c ${url} -O ${genomeVersion}.repeats.txt.gz
+gunzip ${genomeVersion}.repeats.txt.gz
+cat ${genomeVersion}.repeats.txt | cut -f 6,7,8,10,11 | awk 'BEGIN{OFS="\t"}{$6=$4;$4=$5;$5="0";print $0}' | sed '1d' | sort -k1,1 -k2,2n > ${genomeVersion}.repeats.bed
+cat ${genomeVersion}.repeats.txt | cut -f "11-13" | sed '1d' | sort | uniq | sed '1i#feature\tcalss\tfamily' > ${genomeVersion}.repeats.classfication.tsv
+cat ${genomeVersion}.repeats.bed | awk '{ if (!($4 in name)) {name[$4]=0;}name[$4]+=$3-$2}END{for (var in name) {print var "\t" name[var]}}' | sort > ${genomeVersion}.repeats.length.tsv
+
+cat ${genomeVersion}.repeats.txt | awk 'index($6,"_")==0' | awk '$12!="Simple_repeat"' |awk '$12 != "Low_complexity"'  > ${genomeVersion}.repeats.main.txt
+cat ${genomeVersion}.repeats.main.txt | cut -f 6,7,8,10,11 | awk 'BEGIN{OFS="\t"}{$6=$4;$4=$5;$5="0";print $0}' | sed '1d' | sort -k1,1 -k2,2n > ${genomeVersion}.repeats.main.bed
+cat ${genomeVersion}.repeats.main.bed | awk '{ if (!($4 in name)) {name[$4]=0;}name[$4]+=$3-$2}END{for (var in name) {print var "\t" name[var]}}' | sort > ${genomeVersion}.repeats.main.length.tsv
+
+## with NR as suffix in col4
+cat ${genomeVersion}.repeats.main.bed | awk 'BEGIN{OFS="\t"}{$4=$4 "_" NR;print $0}' > ${genomeVersion}.repeats.main.transcript.bed
+
+cat ${genomeVersion}.repeats.main.transcript.bed | awk '{ if (!($4 in name)) {name[$4]=0;}name[$4]+=$3-$2}END{for (var in name) {print var "\t" name[var]}}' | sort > ${genomeVersion}.repeats.main.transcript.length.tsv
+
+#转换出transc的saf
+cat ${genomeVersion}.repeats.main.transcript.bed | awk 'BEGIN{OFS="\t"}{print $4,$1,$2,$3,$6}'  | sed '1iGeneID\tChr\tStart\tEnd\tStrand' > ${genomeVersion}.repeats.main.transcript.saf
+cat ${genomeVersion}.repeats.main.bed | awk 'BEGIN{OFS="\t"}{print $4,$1,$2,$3,$6}'  | sed '1iGeneID\tChr\tStart\tEnd\tStrand' > ${genomeVersion}.repeats.main.saf
+
+#转换出gtf
+bedToGenePred ${genomeVersion}.repeats.main.transcript.bed  stdout | genePredToGtf file stdin ${genomeVersion}.repeats.main.transcript.gtf
+bedToGenePred ${genomeVersion}.repeats.transcript.bed  stdout | genePredToGtf file stdin ${genomeVersion}.repeats.transcript.gtf
+
+
+
 # ensGene
 rsync -avzP rsync://hgdownload.soe.ucsc.edu/goldenPath/${genomeVersion}/database/ensGene.txt.gz ${genomeVersion}.ensGene.txt.gz
 if [[ -e ${genomeVersion}.ensGene.txt.gz ]]; then

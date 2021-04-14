@@ -33,7 +33,6 @@ def generate_opt() -> argparse.ArgumentParser:
     parser.add_argument('-n',"--bins",action="store",type=int,default=1,dest="bins",help="how many data points you want to scan in the each region\n")
     parser.add_argument('-5',"--upstream",action="store",type=int,default=2000,dest="upstream",help="how many bp to extense the bed region up stream (strand specific, 5' direction)\n ")
     parser.add_argument('-3',"--downstream",action="store",type=int,default=2000,dest="downstream",help="how many bp to extense the bed region down stream (strand specific, 3' direction) \n")
-
     parser.add_argument('--5bins',action="store",type=int,default=100,dest="bins_5",help="how many bins  of 5'direction tail\n")
     parser.add_argument('--3bins',action="store",type=int,default=100,dest="bins_3",help="how many bins  of 3'direction tail\n")
     parser.add_argument('-o','--outname',action="store",type=str,default="std",dest="outname",help="output file name, tsv file. first col is the id in given bed, second is the description of part (upstream, region, and downstream), third is the bin id  in given part, and 4th is the real intensity\n")
