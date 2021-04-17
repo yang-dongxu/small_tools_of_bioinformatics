@@ -63,7 +63,7 @@ for df in dfs[1:]:
 df_final.fillna(value=0,inplace=True)
 
 if outname=="std":
-    df_final.to_csv(sep="\t",index=False)
+    print(df_final.to_csv(sep="\t",index=False))
 else:
     df_final.to_csv(outname,index=False,sep="\t")
 sys.exit()
