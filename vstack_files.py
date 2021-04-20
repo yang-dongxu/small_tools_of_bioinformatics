@@ -8,7 +8,7 @@ from copy import deepcopy
 
 import numpy as np
 
-usage="##usage: python {__file__} ifile1,ifile2,ifile3...  [project1,project2,project3...] [outname] [idname]\n## if outname is std, out will print in the tsv format, else write tsv in the given file, default is std \n ## this scripts vstack the table together and add a column describe the part comes from, and skip comment lines"
+usage=f"##usage: python {__file__} ifile1,ifile2,ifile3...  [project1,project2,project3...] [outname] [idname]\n## if outname is std, out will print in the tsv format, else write tsv in the given file, default is std \n ## this scripts vstack the table together and add a column describe the part comes from, and skip comment lines"
 
 if len(sys.argv) <=2 or len(sys.argv)>5:
     print(usage)

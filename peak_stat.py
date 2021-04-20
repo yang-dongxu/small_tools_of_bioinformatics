@@ -21,7 +21,16 @@ if not os.path.isfile(bam):
 
 try:
     oname=sys.argv[3]
+    odir=os.path.split(oname)[0]
+    flag=False
+    if not os.path.exists(odir):
+        os.makedirs(odir)
+        flag=True
     fout=open(oname,'w')
+    
+    if flag:
+        print(f"## targe dir {odir} is not exist, so the script {__file__} create it",file=fout)
+    
 except:
     oname="std"
     fout=sys.stdout
@@ -30,7 +39,7 @@ def now():
     a=datetime.datetime.now()
     return a.strftime("%Y-%m-%d %H:%M:%S")
 
-print(f"## input peak file: {peak}")
+print(f"## input peak file: {peak}",file=fout)
 
 
 print(f"## start to cal peak nums at {now()}",file=fout)
@@ -44,5 +53,7 @@ reads_in_peaks=int(os.popen(cmd_frip).read())
 print(f"read in peak nums: {reads_in_peaks}",file=fout)
 print(f"## end process at {now()}",file=fout)
 
+fout.close()
+sys.exit(0)
 
 

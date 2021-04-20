@@ -43,7 +43,7 @@ df["TPM"]=1e6*(df["intensity"]/df["width"])/np.sum(df["intensity"]/df["width"])
 df["FPKM"]=1e9*df["intensity"]/np.sum(df["intensity"])/df["width"]
 
 if oname=="std":
-    df.to_csv(sep="\t",index=False)
+    print(df.to_csv(sep="\t",index=False))
 else:
     df.to_csv(oname,sep="\t",index=False)
 sys.exit(0)

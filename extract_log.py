@@ -25,10 +25,15 @@ logger.addHandler(sh)
 def generate_opt():
     opt=argparse.ArgumentParser()
 
+    #chipseq related
     opt.add_argument('-b','--bowtie2',action="store",type=str,dest="bowtie2",default=None,help="bowtie2 logs name, with comma ',' as delim\n")
     opt.add_argument('-m','--macs',action="store",type=str,dest="macs",default=None,help="macs logs name, with comma ',' as delim\n")
-    opt.add_argument('-s','--star',action="store",type=str,dest="star",default=None,help="STAR logs name, with comma ',' as delim\n")
     opt.add_argument('-l','--peak',action="store",type=str,dest="peak",default=None,help="peak_stat.py logs name, with comma ',' as delim\n")
+
+    #rnaseq related
+    opt.add_argument('-s','--star',action="store",type=str,dest="star",default=None,help="STAR logs name, with comma ',' as delim\n")
+    opt.add_argument('-r','--read-distribution',action="store",type=str,dest="readsDistribution",default=None,help="peak_stat.py logs name, with comma ',' as delim\n")
+
 
     opt.add_argument('-p','--project',action="store",type=str,dest="project",default="",help="projects, if not provided, script will try to infer from logs input',' as delim\n")
 
@@ -50,7 +55,9 @@ def validate_args(args:argparse.ArgumentParser):
     if args.star !=None and len(args.star.strip()):
         ifiles["star"]=args.star.split(",")
     if args.peak  !=None and len(args.peak.strip()):
-        ifiles["peak"]=args.star.split(",")
+        ifiles["peak"]=args.peak.split(",")
+    if args.readsDistribution  !=None and len(args.readsDistribution.strip()):
+        ifiles["readsDistribution"]=args.readsDistribution.split(",")
 
     if len(ifiles)==0:
         logger.critical("No input files! broken!")
@@ -135,11 +142,32 @@ def parser_peak(name):
     result=parse_log(name,header,indexs,pattern)
     return result
 
+def extract_num(line):
+    return [int(i) for i in re.findall("(\d\d+)",line)]
+
+def parser_readsDistribution(name):
+    with open(name) as f:
+        data=f.read().splitlines()
+
+    header=["total_tags","Extron_tags","Intron_tags","exon_ratio","intron_ratio"]
+    total,cds,utr_5,utr_3,intron= data[1],data[5],data[6],data[7],data[8]
+    values=[extract_num(i) for i in (total,cds,utr_5,utr_3,intron)]
+    total_tags=values[0][0]
+    extron_tags=values[1][1]+values[2][1]+values[3][1]
+    intron_tags=values[4][1]
+
+    exon_ratio=extron_tags/total_tags
+    intron_ratio=intron_tags/total_tags
+    results=[total_tags,extron_tags,intron_tags,exon_ratio,intron_ratio]
+    result_dict={key:value for key,value in zip(header,results)}
+    return result_dict
+
 functions={
     "bowtie2":parser_bowtie2,
     "macs":parser_macs,
     "star":parser_star,
-    "peak":parser_peak
+    "peak":parser_peak,
+    "readsDistribution":parser_readsDistribution
     }
 
 

@@ -78,12 +78,12 @@ def process_each_part(df,bw,nbins,label):
 
 def split_df_bed(df_bed,upstream,downstream):
     df_upper=deepcopy(df_bed)
-    df_upper["start"]=df_bed.apply(lambda x: x["end"] if x["strand"]=="+" else x["start"]-downstream,axis=1)
-    df_upper["end"]=df_bed.apply(lambda x: x["end"]+downstream if x["strand"]=="+" else x["start"],axis=1)
+    df_upper["start"]=df_bed.apply(lambda x: x["start"]-upstream if x["strand"]=="+" else x["end"],axis=1)
+    df_upper["end"]=df_bed.apply(lambda x: x["start"] if x["strand"]=="+" else x["end"]+upstream,axis=1)
 
     df_down=deepcopy(df_bed)
-    df_down["start"]=df_bed.apply(lambda x: x["start"]-upstream if x["strand"]=="+" else x["end"],axis=1)
-    df_down["end"]=df_bed.apply(lambda x: x["start"] if x["strand"]=="+" else x["end"]+upstream,axis=1)
+    df_down["start"]=df_bed.apply(lambda x: x["end"] if x["strand"]=="+" else x["start"]-downstream,axis=1)
+    df_down["end"]=df_bed.apply(lambda x: x["end"]+downstream if x["strand"]=="+" else x["start"],axis=1)
 
     return df_upper,df_bed,df_down
 
@@ -96,6 +96,7 @@ def output(df:pd.DataFrame,name):
 
 def process(args):
     df_bed= pd.read_csv(args.bed,sep="\t",comment="#",usecols=range(0,6),header=None)
+    logger.info("region bed file is loaded  ...")
     assert isinstance(df_bed,pd.DataFrame)
     df_bed.columns=["chr","start","end","name","score","strand"]
     bw=pbw.open(args.bw)
@@ -103,6 +104,7 @@ def process(args):
     labels=["0","1","2"]
     results=[]
     bins=[args.bins_5,args.bins,args.bins_3]
+    logger.info("start to split and process each regions ...")
     for df, label, nbin in zip(split_df_bed(df_bed,args.upstream,args.downstream),labels,bins):
         if bins==0:
             logger.warning(f"skip label {label} becaus bins num is 0")
