@@ -188,7 +188,7 @@ def output(result:dict,arg:argparse.ArgumentParser,**kwargs):
         for part, attribute in info.items():
             for key,value in attribute.items():
                 line[part+"_"+key]=value
-    lines.append(line)
+        lines.append(line)
     logger.debug(f"out lines:\t{lines}")
     df=pd.DataFrame(lines)
     if args.oname=="std":
