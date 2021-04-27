@@ -65,7 +65,7 @@ def process(idf:pd.DataFrame,need_group,group_key:str,kind):
 
 result=process(df,need_group,group_key,kind)
 if oname=="std":
-    result.to_csv(sep="\t",index=False)
+    print(result.to_csv(sep="\t",index=False))
 else:
     result.to_csv(oname,sep="\t",index=False)
 
