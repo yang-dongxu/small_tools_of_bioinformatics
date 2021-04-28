@@ -8,7 +8,7 @@ import csv
 opt=argparse.ArgumentParser()
 opt.add_argument("ifile",default="-",action="store",type=str,help="input gtf file, with - means stdin. comment with # start will be skipped, and col name will appear at last line as comment.")
 opt.add_argument("-o","--oname",default="-",dest="oname",action="store",type=str,help="output name, default is '-' as stdout, other path will be auto created")
-opt.add_argument("-l","--lines",default=100,dest="lines",action="store",help="how many lines used to infer col names")
+opt.add_argument("-l","--lines",default=100,type=int,dest="lines",action="store",help="how many lines used to infer col names")
 opt.add_argument("-f","--feature",default="transcript",dest="feature",action="store",type=str, help="which kind of data to keep: transcript, gene, or exon. dot(.) means all. ")
 opt.add_argument("-d","--ofs",default="\t",dest="ofs",type=str,action="store",help="out put delim, default \\t ")
 

@@ -45,7 +45,7 @@ def generate_opt_vstack(sub:argparse.ArgumentParser):
     opt.add_argument('--names',dest="names",type=str,default="",action="store",help="provide header by hand, use comma(,) as delim ")
     opt.add_argument("--comment",dest="comment",default="#",action="store",help="ignore comment lines start with # ")
     opt.add_argument("--skip",dest="skip",default=0,type=int,action="store",help="skip first n columns ")
-    opt.add_argument('-d',"--sep",dest="sep",default=",",type=str,action="store",help="input file delim. (for tsv, set like this : -d $'\t' )")
+    opt.add_argument('-d',"--sep",dest="sep",default="\t",type=str,action="store",help="input file delim. (for tsv, set like this : -d $'\t'. for csv, use comma(,) )")
 
     opt.add_argument('-k','--key',dest="key",default="project",type=str,action="store",help="the column name of projects")
 
@@ -121,6 +121,18 @@ class Stack:
             sys.exit(1)
         
         logger.info("options validate over, start to read tables ...")
+
+        ## determine comment type
+        if len(arg.comment) == 1:
+            logger.info(f"your comment is {arg.comment}")
+        elif len(arg.comment) == 2 and arg.comment[0] =="\\":
+            logger.info(f"your comment is {arg.comment}")
+        elif arg.comment == "none":
+            arg.comment=None
+            logger.info(f"your comment is {arg.comment}")
+        elif len(arg.comment) >=2 :
+            logger.warning(f"your input comment {arg.comment} is too longer! Only single character or backsplash once is support! Turn comment to NA")
+            arg.comment=None
         return True
 
     def get_tables(self):
@@ -131,7 +143,6 @@ class Stack:
         comment=self.args.comment
         skip=self.args.skip
         sep=self.args.sep
-        ofs=self.args.ofs
         key=self.args.key
         if header <0:
             header=None
@@ -139,13 +150,14 @@ class Stack:
                 logger.info("set none header")
             else:
                 logger.warning(f"set header as: {names}")
-
+        else:
+            logger.info(f"set header as line {header}")
         cols=[]
         for table,project in zip(self.tables,self.projects):
             try:
                 logger.info(f"try to load project {project} with table {table}, sep as {sep}")
                 sep="%s"%sep
-                if header:
+                if header !=None:
                     df=pd.read_csv(table,sep=sep,comment=comment,skip_blank_lines=True,skiprows=skip,header=header)
                 else:
                     df=pd.read_csv(table,sep=sep,comment=comment,skip_blank_lines=True,skiprows=skip,header=None)
@@ -233,7 +245,7 @@ class Stack:
             f=sys.stdout
         else:
             name=self.args.oname
-            path=os.path.split(os.path.abspath(name))
+            path=os.path.split(os.path.abspath(name))[0]
             if not os.path.isdir(path):
                 os.makedirs(path)
                 logger.warning(f"output path {path} you given is not exisit, the script create it")
