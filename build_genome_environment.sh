@@ -12,6 +12,9 @@ threads=${2}
 rsync -avzP rsync://hgdownload.soe.ucsc.edu/goldenPath/${genomeVersion}/bigZips/${genomeVersion}.2bit .
 twoBitToFa ${genomeVersion}.2bit ${genomeVersion}.fa
 
+## get lamda dna for dna methylation process, with NC_001416.1 as accession. Enterobacteria_phage_lambda.fa
+wget -c "https://eutils.ncbi.nlm.nih.gov/entrez/eutils/efetch.fcgi?db=nuccore&id=NC_001416.1&rettype=fasta&retmode=text"  -O lambda.fa
+
 cat ${genomeVersion}.fa | awk 'BEGIN{flag=1} (flag==1 && index($1,">")==0){print $0}(index($1,">")!=0){if (index($1,"_")==0) {flag=1;print $0; } else flag=0} ' > ${genomeVersion}_main.fa
 #python ${MY_PATH}/del_fa.py ${genomeVersion}.fa > ${genomeVersion}_main.fa
 
@@ -69,6 +72,25 @@ cat  ${genomeVersion}.refGene.bed | awk '{if ($6 == "+") {start=$2-2000;end=$2+2
 cat  ${genomeVersion}.refGene.main.bed | awk '{if ($6 == "+") {start=$2-2000;end=$2+2000;} else if ($6 == "-" ) {start=$3-2000;end=$3+2000;}else {start="Start";end="End"};printf("%s\t%s\t%s\t%s\t%s\t%s\n",$1,start,end,$4,$5,$6)}' | awk '{if ($5 != "Strand") {if ($2>0) start=$2;else {start=0};} else start="Start" ; printf("%s\t%s\t%s\t%s\t%s\t%s\n",$1,start,$3,$4,$5,$6)}' | sort -k1,1 -k2,2n > ${genomeVersion}.refGene.main.promoter_2k.bed
 
 
+
+# build ceasBw index
+transfer_script="${SCRIPTS}/genePredExtToSqlite3.py"
+if [[ ! -f $transfer_script ]];then
+    echo "No scripts need, please down https://raw.githubusercontent.com/wwang-chcn/wwang_bioinfo_tools/master/genome_source_build/genePredExtToSqlite3.py to your \$SCRIPTS. At now it will be download to `pwd` "
+    url="https://raw.githubusercontent.com/wwang-chcn/wwang_bioinfo_tools/master/genome_source_build/genePredExtToSqlite3.py"
+    wget -c $url -O  genePredExtToSqlite3.py
+    transfer_script="genePredExtToSqlite3.py"
+fi
+# rm pre-builded sqlite3 tabls
+if [[ -f ${genomeVersion}.refGene.main.sqlite3  ]];then
+rm ${genomeVersion}.refGene.main.sqlite3 
+fi
+if [[ -f ${genomeVersion}.refGene.sqlite3  ]];then
+rm ${genomeVersion}.refGene.sqlite3 
+fi
+python $transfer_script ${genomeVersion}.refGene.main.genePredExt ${genomeVersion}.refGene.main.sqlite3 
+python $transfer_script ${genomeVersion}.refGene.genePredExt ${genomeVersion}.refGene.sqlite3 
+
 # prepare repeats annotations
 url="https://hgdownload.soe.ucsc.edu/goldenPath/${genomeVersion}/database/rmsk.txt.gz"
 wget -c ${url} -O ${genomeVersion}.repeats.txt.gz
@@ -93,24 +115,3 @@ cat ${genomeVersion}.repeats.main.bed | awk 'BEGIN{OFS="\t"}{print $4,$1,$2,$3,$
 #转换出gtf
 bedToGenePred ${genomeVersion}.repeats.main.transcript.bed  stdout | genePredToGtf file stdin ${genomeVersion}.repeats.main.transcript.gtf
 bedToGenePred ${genomeVersion}.repeats.transcript.bed  stdout | genePredToGtf file stdin ${genomeVersion}.repeats.transcript.gtf
-
-
-
-# ensGene
-rsync -avzP rsync://hgdownload.soe.ucsc.edu/goldenPath/${genomeVersion}/database/ensGene.txt.gz ${genomeVersion}.ensGene.txt.gz
-if [[ -e ${genomeVersion}.ensGene.txt.gz ]]; then
-    gunzip ${genomeVersion}.ensGene.txt.gz
-    cut -f 2-11 ${genomeVersion}.ensGene.txt > ${genomeVersion}.ensGene.genePred
-    cut -f 2-16 ${genomeVersion}.ensGene.txt > ${genomeVersion}.ensGene.genePredExt
-    genePredToGtf -utr file ${genomeVersion}.ensGene.genePred ${genomeVersion}.ensGene.gtf
-    python ${MY_PATH}/correctGtfGeneID.py ${genomeVersion}.ensGene.genePredExt ${genomeVersion}.ensGene.gtf
-    genePredToBed ${genomeVersion}.ensGene.genePredExt ${genomeVersion}.ensGene.bed
-    rsync -avzP rsync://hgdownload.soe.ucsc.edu/goldenPath/${genomeVersion}/database/ensemblToGeneName.txt.gz ${genomeVersion}.ensemblToGeneName.txt.gz
-    gunzip ${genomeVersion}.ensemblToGeneName.txt.gz
-    python ${MY_PATH}/getEnsGeneToGeneName.py ${genomeVersion}
-fi
-
-python ${MY_PATH}/genePredExtToSqlite3.py ${genomeVersion}.refGene.genePredExt ${genomeVersion}.refGene.sq3
-if [[ -e ${genomeVersion}.ensGene.txt.gz ]]; then
-    python ${MY_PATH}/genePredExtToSqlite3.py ${genomeVersion}.ensGene.genePredExt ${genomeVersion}.ensGene.sq3
-fi

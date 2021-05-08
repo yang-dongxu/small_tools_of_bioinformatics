@@ -1,3 +1,4 @@
+#!/usr/bin/env python
 import os
 import sys
 import re
@@ -8,7 +9,7 @@ from typing import Pattern
 
 import pandas as pd
 
-logger_name = "log extracter"
+logger_name = "log extractor"
 logger = logging.getLogger(logger_name)
 logger.setLevel(logging.INFO)
 
