@@ -63,7 +63,14 @@ def validate_opt(args:argparse.ArgumentParser):
 
 def get_bw_stat(x:pd.Series,bw,nbins=1):
     strand=x["strand"]
-    outs=bw.stats(x["chr"],int(x["start"]+1),int(x["end"]),nBins=nbins)
+    try:
+        x["start"]=max(x["start"],0)
+        outs=bw.stats(x["chr"],int(x["start"]),int(x["end"]),nBins=nbins)
+    except Exception as e:
+        logger.error(f'Error at (chr, start, end): ({x["chr"],int(x["start"]),int(x["end"])})')
+        logger.warning(f'Treat result of (chr, start, end): ({x["chr"],int(x["start"]),int(x["end"])}) as 0')
+        logger.warning(e)
+        outs=np.zeros(nbins)
     if strand=="-":
         outs=outs[::-1]
     return outs
@@ -95,7 +102,32 @@ def output(df:pd.DataFrame,name):
     return True
 
 def process(args):
-    df_bed= pd.read_csv(args.bed,sep="\t",comment="#",usecols=range(0,6),header=None)
+    try:
+        df_bed= pd.read_csv(args.bed,sep="\t",comment="#",usecols=range(0,6),header=None)
+    except:
+        df_bed= pd.read_csv(args.bed,sep="\t",comment="#",header=None)
+        logger.warning(f"input bed has ONLY {len(df_bed.columns)} cols, incomplete!")
+        if len(df_bed.columns)<3:
+            logger.error(f"Input bed must contain at least 3 cols! check it ! {args.bed}")
+            sys.exit(1)
+
+        if len(df_bed.columns)==3:
+            df_bed.columns=["chr","start","end"]
+            project=os.path.split(args.bed)[1].split(".")[0]
+            df_bed["name"]=[f"{project}_{i+1}" for i in range(len(df_bed))]
+            logger.warning(f"treat {project}_ as prefix of 4th col")
+        if len(df_bed.columns)==4:
+            df_bed.columns=["chr","start","end","name"]
+            df_bed["score"]="."
+            logger.warning("treat 5th(score) as '.' ")
+
+        if len(df_bed.columns)==5:
+            df_bed.columns=["chr","start","end","name","score"]
+            df_bed["strand"]="+"
+            logger.warning("treat all region on + strand!")
+        logger.info("example table below: ")
+        example_table=df_bed[:10].to_csv(sep="\t").replace("\n","\n## ")
+        print(example_table)
     logger.info("region bed file is loaded  ...")
     assert isinstance(df_bed,pd.DataFrame)
     df_bed.columns=["chr","start","end","name","score","strand"]
@@ -105,10 +137,11 @@ def process(args):
     results=[]
     bins=[args.bins_5,args.bins,args.bins_3]
     logger.info("start to split and process each regions ...")
-    for df, label, nbin in zip(split_df_bed(df_bed,args.upstream,args.downstream),labels,bins):
-        if bins==0:
+    for df, label, nbin in zip(split_df_bed(df_bed,args.upstream,args.downstream),labels,(args.bins_5,args.bins,args.bins_3)):
+        if nbin==0:
             logger.warning(f"skip label {label} becaus bins num is 0")
             continue
+        logger.info(f"start to process label {label} part")
         new_df=process_each_part(df,bw,nbin,label)
         results.append(new_df)
         new_df==None
