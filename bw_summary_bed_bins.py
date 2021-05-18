@@ -31,8 +31,8 @@ def generate_opt() -> argparse.ArgumentParser:
     parser.add_argument('-b',"--bed",action="store",type=str, dest="bed", required=True, help="the bed file your input, must have 6 columns or more, and the 4th col will be used as id in output\n")
     parser.add_argument('-w',"--bigwig",action="store",type=str, dest="bw", required=True, help="the bigwig file you want to scan\n")
     parser.add_argument('-n',"--bins",action="store",type=int,default=1,dest="bins",help="how many data points you want to scan in the each region\n")
-    parser.add_argument('-5',"--upstream",action="store",type=int,default=2000,dest="upstream",help="how many bp to extense the bed region up stream (strand specific, 5' direction)\n ")
-    parser.add_argument('-3',"--downstream",action="store",type=int,default=2000,dest="downstream",help="how many bp to extense the bed region down stream (strand specific, 3' direction) \n")
+    parser.add_argument('-5',"--upstream",action="store",type=int,default=0,dest="upstream",help="how many bp to extense the bed region up stream (strand specific, 5' direction)\n ")
+    parser.add_argument('-3',"--downstream",action="store",type=int,default=0,dest="downstream",help="how many bp to extense the bed region down stream (strand specific, 3' direction) \n")
     parser.add_argument('--5bins',action="store",type=int,default=100,dest="bins_5",help="how many bins  of 5'direction tail\n")
     parser.add_argument('--3bins',action="store",type=int,default=100,dest="bins_3",help="how many bins  of 3'direction tail\n")
     parser.add_argument('-o','--outname',action="store",type=str,default="std",dest="outname",help="output file name, tsv file. first col is the id in given bed, second is the description of part (upstream, region, and downstream), third is the bin id  in given part, and 4th is the real intensity\n")
@@ -70,7 +70,7 @@ def get_bw_stat(x:pd.Series,bw,nbins=1):
         logger.error(f'Error at (chr, start, end): ({x["chr"],int(x["start"]),int(x["end"])})')
         logger.warning(f'Treat result of (chr, start, end): ({x["chr"],int(x["start"]),int(x["end"])}) as 0')
         logger.warning(e)
-        outs=np.zeros(nbins)
+        outs=np.array([np.nan]*nbins)
     if strand=="-":
         outs=outs[::-1]
     return outs
@@ -81,6 +81,7 @@ def process_each_part(df,bw,nbins,label):
     df_result["name"]=df_p["name"]
     df_result=df_result.melt(id_vars="name",var_name="site",value_name="intensity")
     df_result["label"]=label
+    df_result.fillna(value=pd.NA)
     return df_result
 
 def split_df_bed(df_bed,upstream,downstream):
@@ -96,7 +97,7 @@ def split_df_bed(df_bed,upstream,downstream):
 
 def output(df:pd.DataFrame,name):
     if name=="std":
-        df.to_csv(sep="\t",index=False)    
+        print(df.to_csv(sep="\t",index=False))    
     else:
         df.to_csv(name,sep="\t",index=False)
     return True
@@ -127,7 +128,7 @@ def process(args):
             logger.warning("treat all region on + strand!")
         logger.info("example table below: ")
         example_table=df_bed[:10].to_csv(sep="\t").replace("\n","\n## ")
-        print(example_table)
+        print("## "+example_table)
     logger.info("region bed file is loaded  ...")
     assert isinstance(df_bed,pd.DataFrame)
     df_bed.columns=["chr","start","end","name","score","strand"]
@@ -147,7 +148,7 @@ def process(args):
         new_df==None
         logger.info(f"label {label} part is processed!")
 
-    df_result=pd.concat(results).fillna(0).sort_values(["name","label","site"])
+    df_result=pd.concat(results).fillna(value="nan").sort_values(["name","label","site"])
     logger.info("prepare to output")
     output(df_result,args.outname)
     logger.info("output over! see you ~")
