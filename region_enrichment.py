@@ -120,7 +120,29 @@ def output(data:pd.DataFrame,oname="std",sep="\t"):
     return 0
 
 def process(key,strand=False,genome_size=1):
-    return 0
+    q_tag,query,db_tag,db =key
+    tmp1=f".{query}.{np.random.randn()}.{np.random.randn()}.tmp"
+    tmp2=f".{db}.{np.random.randn()}.{np.random.randn()}.tmp"
+    cmd=f"bedtools merge -i {query} > {tmp1}"
+    cmd+=f"\n bedtools merge -i {db} > {tmp2} "
+    if strand:
+        cmd+=f" \n bedtools intersect -a {tmp1} -b {tmp2} -s | "
+    else:
+        cmd+=f" \n bedtools intersect -a {tmp1} -b {tmp2}  | "
+    cmd+=f" awk 'BEGIN{{s=0}}{{b=$3-$2;s+=b}}{{print s}}' "
+    overlap=subprocess.run(cmd).stdout
+    
+    cmd=f"cat {tmp1} | awk 'BEGIN{{s=0}}{{b=$3-$2;s+=b}}{{print s}}' "
+    a_len=subprocess.run(cmd).stdout
+
+    cmd=f"cat {tmp2} | awk 'BEGIN{{s=0}}{{b=$3-$2;s+=b}}{{print s}}' "
+    b_len=subprocess.run(cmd).stdout
+
+    cmd=f"rm {tmp1} {tmp2}"
+
+    overlap, a_len, b_len = int(overlap), int(a_len), int(b_len)
+    enrichment=(overlap/a_len)/(b_len/genome_size)
+    return enrichment
 
 def run(args) ->pd.DataFrame:
     '''input a class with attribute querys, db, query_tags, db_tags, and output a pd.DataFrame '''
