@@ -54,7 +54,8 @@ def validate_arg(arg) -> tuple :
 
     if len(beds) != len(bws):
         logger.error(f"beds and bigwigs are different at length! check -b and -w")
-        sys.exit(1)
+        beds=beds
+        #sys.exit(1)
 
     if str(arg.na).lower() in ["na","none","nan"]:
         arg.na=pd.NA
@@ -66,12 +67,14 @@ def validate_arg(arg) -> tuple :
         finally:
             arg.na=na
     logger.info(f"treat na values as {arg.na}")
-    
-    for bed,bw in zip(beds,bws):
+
+    for bed in beds:
         if not os.path.isfile(bed):
             logger.error(f"bed file {bed} has errors! May not exisi.")
             sys.exit(1)
-        if not  os.path.isfile(bed):
+    
+    for bw in bws:
+        if not  os.path.isfile(bw):
             logger.error(f"bw file {bed} has errors! May not exisi.")
             sys.exit(1)
 
@@ -130,7 +133,7 @@ def process(beds,bws,projects,*args) -> pd.DataFrame:
     tmp_name=f"bwcor_{abs(np.random.randn()*100)}.bed"
     tmp_name_o=tmp_name+"out.bed"
     regions.to_csv(tmp_name,sep="\t",header=False,index=False)
-    cmd=f"cat {tmp_name} | sort -k1,1 -k2,2n | bedtools merge -i - > {tmp_name_o} "
+    cmd=f"cat {tmp_name} | sort -k1,1 -k2,2n | bedtools merge -d -1 -i - > {tmp_name_o} "
     os.system(cmd)
     regions=pd.read_csv(tmp_name_o,sep="\t",names=["chr","start","end"])
     os.remove(tmp_name)
