@@ -2,6 +2,7 @@
 
 import os
 import sys
+from pandas._libs.missing import NA
 import pyBigWig as pbw
 import argparse
 import logging 
@@ -35,6 +36,7 @@ def generate_opt() -> argparse.ArgumentParser:
     opt.add_argument("-na","--navalue",action="store",type=str,dest="na",default="na")
 
     opt.add_argument("-o","--outname",action="store",type=str,dest="oname",default="std")
+    opt.add_argument("--outstat",action="store",type=str,dest="osname",default=None, help="if you want to out put bw summary matrix, set this")
     opt.add_argument("-d","--ofs",action="store",type=str,dest="ofs",default="\t")
 
     return opt
@@ -79,13 +81,15 @@ def validate_arg(arg) -> tuple :
             sys.exit(1)
 
     if len(projects) != len(bws):
-        if len(projects) ==0 :
+        if len(projects) == 0 :
             logger.warning("No projects info provide! Inferring from bws!")
-            projects=[i.split(".")[0] for i in bws]
+            projects=[os.path.split(os.path.abspath(i))[1].split(".")[0] for i in bws]
             logger.warning(f"Inferred projects are {projects}")
         else:
             logger.error(f"Length of project is not equal as bws! Check them!: {projects}")
-            sys.exit(1)
+            projects=[os.path.split(os.path.abspath(i))[1].split(".")[0] for i in bws]
+            logger.warning(f"Inferred projects are {projects}")
+            #sys.exit(1)
 
     
     if arg.oname != "std":
@@ -103,7 +107,8 @@ def get_bw_stat(x:pd.Series,bw) -> float:
     try:
         x["start"]=max(x["start"],0)
         outs=bw.stats(x["chr"],int(x["start"]),int(x["end"]),nBins=1)[0]
-        outs=np.array(outs)
+        if outs == None :
+            outs=np.nan
     except Exception as e:
         logger.error(f'Error at (chr, start, end): ({x["chr"],int(x["start"]),int(x["end"])})')
         logger.warning(f'Treat result of (chr, start, end): ({x["chr"],int(x["start"]),int(x["end"])}) as 0')
@@ -155,11 +160,11 @@ def process(beds,bws,projects,*args) -> pd.DataFrame:
         p.loc[:,z]=deepcopy(p[z].apply(float))
     df_cor=p.corr(method ='pearson')
     print(df_cor)
-    return df_cor
+    return df_cor,odf
 
 def output(df_cor:pd.DataFrame,oname="std",sep="\t"):
 
-    logger.info("prepare output content ...")
+    logger.info(f"prepare output content {oname} ...")
     out=df_cor.to_csv(sep=sep)
     if oname=="std":
         fo=sys.stdout
@@ -176,8 +181,10 @@ if __name__ == '__main__':
     opt=generate_opt()
     arg=opt.parse_args()
     beds, bws, projects, na=validate_arg(arg)
-    odf=process(beds,bws,projects,na)
-    output(odf,arg.oname,arg.ofs)
+    odf_cor,odf=process(beds,bws,projects,na)
+    output(odf_cor,arg.oname,arg.ofs)
+    if arg.osname:
+        output(odf,arg.osname,arg.ofs)
     logger.info("see you~")
     
 
