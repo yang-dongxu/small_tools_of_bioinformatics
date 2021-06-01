@@ -81,7 +81,7 @@ def process_each_part(df,bw,nbins,label):
     df_result["name"]=df_p["name"]
     df_result=df_result.melt(id_vars="name",var_name="site",value_name="intensity")
     df_result["label"]=label
-    df_result.fillna(value=pd.NA)
+    df_result.fillna(value="nan")
     return df_result
 
 def split_df_bed(df_bed,upstream,downstream):
