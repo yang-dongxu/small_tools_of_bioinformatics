@@ -26,4 +26,4 @@
 | sra_downlaod.py | a pipeline to download sra and fastq-dump to given folder, from ncbi |
 | region_enrichment.py | a script to calculate region on given bed |
 | snpSelection.py | a script to split bam file based on snp, source from Yanghui () |
-| get_from_ena.sh | a script to download fastq from ena |
+| get_from_ena.sh | a script to download fastq from ena, source from [wangwen](https://github.com/wwang-chcn/) and [Reemann](https://github.com/Reemann) |
