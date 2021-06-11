@@ -17,7 +17,13 @@
 | normaliseRNA_featureCounts.py| normalise out put of software [featureCounts](http://subread.sourceforge.net/), but at first you have to turn the last column name to Reads. May decrept soon |
 | normalize_RNA_expression.py| normalise RNA expression by given count tsv (col| feature,counts) and feature length tsv(col| feature, length) |
 | normalize_homer_counts.sh| normalise software [HOMER](http://homer.ucsd.edu/homer/) output of repeatsAnalyze repeats subcommand. |
-| peak_stat.py| a script to analyze fri |
+| peak_stat.py| a script to analyze frip |
 | sort_noheader.sh| [non-complete] |
 | tableStack.py | a script to combine tables together, vstack or hstack(merge, not complete) |
 | vstack_files.py| [decrept] a script to vstack tabless |
+| gtf_to_table.py | a script to transfomr gtf to a table in tsv or csv |
+| bwcor.py | a script to calculate bigwigs correlation on given bed |
+| sra_downlaod.py | a pipeline to download sra and fastq-dump to given folder, from ncbi |
+| region_enrichment.py | a script to calculate region on given bed |
+| snpSelection.py | a script to split bam file based on snp, source from Yanghui () |
+| get_from_ena.sh | a script to download fastq from ena |
