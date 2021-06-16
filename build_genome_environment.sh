@@ -71,6 +71,12 @@ cat ${genomeVersion}.refGene.txt | cut -f 2,13  >  ${genomeVersion}.refGene.tran
 cat  ${genomeVersion}.refGene.bed | awk '{if ($6 == "+") {start=$2-2000;end=$2+2000;} else if ($6 == "-" ) {start=$3-2000;end=$3+2000;}else {start="Start";end="End"};printf("%s\t%s\t%s\t%s\t%s\t%s\n",$1,start,end,$4,$5,$6)}' | awk '{if ($5 != "Strand") {if ($2>0) start=$2;else {start=0};} else start="Start" ; printf("%s\t%s\t%s\t%s\t%s\t%s\n",$1,start,$3,$4,$5,$6)}' | sort -k1,1 -k2,2n > ${genomeVersion}.refGene.promoter_2k.bed
 cat  ${genomeVersion}.refGene.main.bed | awk '{if ($6 == "+") {start=$2-2000;end=$2+2000;} else if ($6 == "-" ) {start=$3-2000;end=$3+2000;}else {start="Start";end="End"};printf("%s\t%s\t%s\t%s\t%s\t%s\n",$1,start,end,$4,$5,$6)}' | awk '{if ($5 != "Strand") {if ($2>0) start=$2;else {start=0};} else start="Start" ; printf("%s\t%s\t%s\t%s\t%s\t%s\n",$1,start,$3,$4,$5,$6)}' | sort -k1,1 -k2,2n > ${genomeVersion}.refGene.main.promoter_2k.bed
 
+# get gene distal 10k regions
+cat ${genomeVersion}.refGene.main.bed  | cut -f 1-6 | \
+    bedtools flank -i -  -g ${genomeVersion}_main.chrom.sizes -b 10000 | \
+    sort -k1,1 -k2,2n  | \
+    bedtools complement -i - -g ${genomeVersion}_main.chrom.sizes | \
+    sort -k1,1 -k2,2n  | > ${genomeVersion}.refGene.main.distal_10k.bed
 
 
 # build ceasBw index
