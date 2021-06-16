@@ -93,7 +93,7 @@ def validate_opt(opt:argparse.ArgumentParser):
         logger.warning(f"query tags are inferred as {query_tags}")
     
     if len(dbs) != len(db_tags):
-        logger.warning("query_tags are not pair to querys. Infer tags from input names!")
+        logger.warning("db_tags are not pair to querys. Infer tags from input names!")
         db_tags=[".".join(os.path.split(i)[1].split(".")[:-1])  if "." in os.path.split(i)[1] else os.path.split(i)[1]  for i in dbs]
         logger.warning(f"query tags are inferred as {db_tags}")
 
@@ -115,32 +115,33 @@ def output(data:pd.DataFrame,oname="std",sep="\t"):
         if not os.path.exists(p):
             os.makedirs(p)
         fo=open(oname,'w')
-    fo.write(data.to_csv(sep="\t",index=False))
+    fo.write(data.to_csv(sep=sep,index=False))
     logger.info(f"output over! see {oname}")
     return 0
 
 def process(key,strand=False,genome_size=1):
     q_tag,query,db_tag,db =key
-    tmp1=f".{query}.{np.random.randn()}.{np.random.randn()}.tmp"
-    tmp2=f".{db}.{np.random.randn()}.{np.random.randn()}.tmp"
+    tmp1=f".{q_tag}.{np.random.randn()}.{np.random.randn()}.tmp"
+    tmp2=f".{db_tag}.{np.random.randn()}.{np.random.randn()}.tmp"
     cmd=f"bedtools merge -i {query} > {tmp1}"
     cmd+=f"\n bedtools merge -i {db} > {tmp2} "
     if strand:
         cmd+=f" \n bedtools intersect -a {tmp1} -b {tmp2} -s | "
     else:
         cmd+=f" \n bedtools intersect -a {tmp1} -b {tmp2}  | "
-    cmd+=f" awk 'BEGIN{{s=0}}{{b=$3-$2;s+=b}}{{print s}}' "
-    overlap=subprocess.run(cmd).stdout
+    cmd+=f" awk 'BEGIN{{s=0}}{{b=$3-$2;s+=b}}END{{print s}}' "
+    overlap=subprocess.run(cmd,shell=True,capture_output=True,text=True).stdout
     
-    cmd=f"cat {tmp1} | awk 'BEGIN{{s=0}}{{b=$3-$2;s+=b}}{{print s}}' "
-    a_len=subprocess.run(cmd).stdout
+    cmd=f"cat {tmp1} | awk 'BEGIN{{s=0}}{{b=$3-$2;s+=b}}END{{print s}}' "
+    a_len=subprocess.run(cmd,shell=True,capture_output=True,text=True).stdout
 
-    cmd=f"cat {tmp2} | awk 'BEGIN{{s=0}}{{b=$3-$2;s+=b}}{{print s}}' "
-    b_len=subprocess.run(cmd).stdout
+    cmd=f"cat {tmp2} | awk 'BEGIN{{s=0}}{{b=$3-$2;s+=b}}END{{print s}}' "
+    b_len=subprocess.run(cmd,shell=True,capture_output=True,text=True).stdout
 
     cmd=f"rm {tmp1} {tmp2}"
-
+    subprocess.run(cmd,shell=True)
     overlap, a_len, b_len = int(overlap), int(a_len), int(b_len)
+    logger.info(f"overlap, {q_tag} len, {db_tag} len: ( {overlap}, {a_len}, {b_len})")
     enrichment=(overlap/a_len)/(b_len/genome_size)
     return enrichment
 
