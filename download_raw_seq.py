@@ -129,7 +129,7 @@ def get_metainfo(project: str, filterTool: Filter, ia: str, ii: str) -> pd.DataF
     code = 0
     code = subprocess.run(cmd, shell=True)
     if code == 1:
-        logger.error(f"download error! cmd: {cmd}")
+        logger.critical(f"download error! cmd: {cmd}")
         sys.exit(1)
 
     logger.info(f"start to filter meta info into {ii}")
