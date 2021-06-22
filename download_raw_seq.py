@@ -5,6 +5,7 @@ import pathlib
 import argparse
 import subprocess
 import re
+import datetime
 
 import numpy as np
 import pandas as pd
@@ -28,7 +29,7 @@ logger.addHandler(sh)
 
 class Filter:
     def __init__(self, *args):
-        self.standard = args
+        self.standard = [i for i in args if len(i.strip())]
 
     def filter(self, target: str):
         for i in self.standard:
@@ -51,9 +52,9 @@ def generate_opt():
 
     opt.add_argument("-o", "--outdir",dest="odir",action="store",required=False,default="rawdata",help="where to save downloaded files\n")
 
-    opt.add_argument("-c", "--cmd",dest="cmd",action="store",default="download.sh",help="where you want to output download cmd scripts\n")
+    opt.add_argument("-c", "--cmd",dest="cmd",action="store",default="",help="where you want to output download cmd scripts\n")
 
-    opt.add_argument("-m", "--md5", dest="md5", action="store", default="md5.tsv", help="where to save your md5 info")
+    opt.add_argument("-m", "--md5", dest="md5", action="store", default="", help="where to save your md5 info")
 
     args = opt.parse_args()
 
@@ -70,19 +71,19 @@ def validate_opt(args: argparse.ArgumentParser):
         if os.path.isfile(f):
             if not args.re:
                 logger.info("treat filter as file input")
-                with open(args.filter) as fi:
+                with open(f) as fi:
                     ps = fi.read().split("\n")
-                fs += ps
+                fs += [i for i in ps if len(i.strip())]
             else:
                 logger.warning(f"filter {args.filter} is exist as a file, but forced to treat as string filter")
-        fs += [f]
+        else:
+            fs += [f]
     if len(fs) == 0:
         fs = [".*"]
     filterTool = Filter(*fs)
     logger.info(f"choosed filter is {filterTool}")
 
     logger.info(f"outdir is {args.odir}")
-    logger.info(f"output cmd path is {args.cmd}")
 
     ia = os.path.join(os.getcwd(), f"{args.project}.info.all.tsv")
     ii = os.path.join(os.getcwd(), f"{args.project}.info.tsv")
@@ -96,15 +97,28 @@ def validate_opt(args: argparse.ArgumentParser):
 
 
     ###odir
-    odir=pathlib.Path(args.odir)
+    odir = pathlib.Path(args.odir)
     odir.mkdir(parents=True, exist_ok=True)
-    logger.info(f"odir is {odir}")
+    args.odir=str(odir.resolve())
+    logger.info(f"odir is {args.odir}")
 
     ###md5
-    md5=args.md5
-    md5=pathlib.Path(md5)
+    md5 = args.md5
+    if len(md5.strip())==0:
+        md5=datetime.datetime.now().strftime(f"md5.{args.project}.%Y-%m-%d-%H-%M.tsv")
+    md5 = pathlib.Path(md5)
     md5.resolve().parent.mkdir(parents=True, exist_ok=True)
+    args.md5=str(md5.resolve())
     logger.info(f"md5 summary file is {md5}")
+
+    ##cmd
+    cmd=args.cmd
+    if len(cmd.strip())==0:
+        cmd=datetime.datetime.now().strftime(f"download.{args.project}.%Y-%m-%d-%H-%M.sh")
+    cmd=pathlib.Path(cmd)
+    cmd.resolve().parent.mkdir(parents=True, exist_ok=True)
+    args.cmd=str(cmd.resolve())
+    logger.info(f"output cmd path is {args.cmd}")
     return args, filterTool
 
 
@@ -113,7 +127,7 @@ def get_metainfo(project: str, filterTool: Filter, ia: str, ii: str) -> pd.DataF
 
     cmd=f'''wget -O {ia} "https://www.ebi.ac.uk/ena/portal/api/filereport?accession={project}&result=read_run&fields=sample_accession,experiment_accession,run_accession,scientific_name,library_layout,fastq_md5,fastq_ftp&format=tsv&download=true" '''
     code = 0
-    #code = subprocess.run(cmd, shell=True)
+    code = subprocess.run(cmd, shell=True)
     if code == 1:
         logger.error(f"download error! cmd: {cmd}")
         sys.exit(1)
@@ -124,11 +138,14 @@ def get_metainfo(project: str, filterTool: Filter, ia: str, ii: str) -> pd.DataF
     ii = pathlib.Path(ii)
     ia.parent.mkdir(parents=True, exist_ok=True)
     ii.parent.mkdir(parents=True, exist_ok=True)
-    with open(ia, 'r') as f1, open(ii, 'w') as f2:
+    with open(ia, 'r') as f1, open(ii, 'w') as f2 :
+        i = 0
         for line in f1:
-            if filterTool.filter(line):
+            if i == 0:
                 f2.write(line)
-                f2.write("\n")
+            elif filterTool.filter(line):
+                f2.write(line)
+            i+=1
     logger.info(f"meta info processed! see {ii}")
     df_metainfo = pd.read_csv(ii, sep="\t")
     if len(df_metainfo) ==0:
@@ -147,7 +164,7 @@ def get_raw_seqs(df_metainfo, odir: str) -> str:
             cmd = f'''cd {odir} && if [ ! -f {fastq_file} ]; then ~/.aspera/connect/bin/ascp -QT -l 300m -P33001 -i ~/.aspera/connect/etc/asperaweb_id_dsa.openssh era-fasp@fasp.sra.ebi.ac.uk:{fastq_file_path} .; fi '''
             yield cmd
 
-            cmd = f'''cd {odir} && if [ ! -f {fastq_file} ]; then wget ftp://ftp.sra.ebi.ac.uk/{fastq_file_path}; fi '''
+            cmd = f'''cd {odir} && if [ ! -f {fastq_file} ]; then wget -c ftp://ftp.sra.ebi.ac.uk/{fastq_file_path}; fi '''
             yield cmd
 
     cmds = []
@@ -176,7 +193,7 @@ def get_md5_sum(df_metainfo: pd.DataFrame, odir: str, md5_name: str) -> str:
             for line in get_md5_sum_byrow(row["fastq_md5"], row["fastq_ftp"]):
                 f.write(line)
                 f.write("\n")
-    cmd = f" md5sum -c {md5_name} "
+    cmd = f" md5sum -c {md5_name} \n"
 
     return [cmd]
 
@@ -194,10 +211,10 @@ def run():
 
 if __name__ == '__main__':
     cmd, args=run()
-    print(cmd)
+    #print(cmd)
 
     logger.info(f"out put cmd file at {args.cmd}")
-    with open(args.cmd) as f:
+    with open(args.cmd,'w') as f:
         f.write(cmd)
     logger.info(f"process over! see you~")
     
