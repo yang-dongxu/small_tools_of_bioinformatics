@@ -131,6 +131,9 @@ def get_metainfo(project: str, filterTool: Filter, ia: str, ii: str) -> pd.DataF
                 f2.write("\n")
     logger.info(f"meta info processed! see {ii}")
     df_metainfo = pd.read_csv(ii, sep="\t")
+    if len(df_metainfo) ==0:
+        logger.error("no record pass your filter! check them!")
+        sys.exit(1)
     assert isinstance(df_metainfo, pd.DataFrame)
     return df_metainfo
 
@@ -186,9 +189,15 @@ def run():
     #print(df_metainfo)
     cmds = get_raw_seqs(df_metainfo, args.odir)
     cmds += get_md5_sum(df_metainfo, args.odir, args.md5)
-    return "\n".join(cmds)
+    return "\n".join(cmds),args
 
 
 if __name__ == '__main__':
-    cmd=run()
+    cmd, args=run()
     print(cmd)
+
+    logger.info(f"out put cmd file at {args.cmd}")
+    with open(args.cmd) as f:
+        f.write(cmd)
+    logger.info(f"process over! see you~")
+    
