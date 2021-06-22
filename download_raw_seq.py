@@ -125,7 +125,7 @@ def validate_opt(args: argparse.ArgumentParser):
 def get_metainfo(project: str, filterTool: Filter, ia: str, ii: str) -> pd.DataFrame:
     logger.info(f"start to download meta info to {ia}")
 
-    cmd=f'''wget -O {ia} "https://www.ebi.ac.uk/ena/portal/api/filereport?accession={project}&result=read_run&fields=sample_accession,experiment_accession,run_accession,scientific_name,library_layout,fastq_md5,fastq_ftp&format=tsv&download=true" '''
+    cmd=f'''wget -O {ia} "https://www.ebi.ac.uk/ena/portal/api/filereport?accession={project}&result=read_run&fields=sample_accession,experiment_accession,run_accession,scientific_name,library_layout,fastq_md5,fastq_ftp,sample_alias,sample_title&format=tsv&download=true" '''
     code = 0
     code = subprocess.run(cmd, shell=True)
     if code == 1:
@@ -161,7 +161,7 @@ def get_raw_seqs(df_metainfo, odir: str) -> str:
         for i, j in enumerate(urls):
             fastq_file = j.rsplit('/', 1)[1]
             fastq_file_path = j.split('/', 1)[1]
-            cmd = f'''cd {odir} && if [ ! -f {fastq_file} ]; then ~/.aspera/connect/bin/ascp -QT -l 300m -P33001 -i ~/.aspera/connect/etc/asperaweb_id_dsa.openssh era-fasp@fasp.sra.ebi.ac.uk:{fastq_file_path} .; fi '''
+            cmd = f'''cd {odir} && if [ ! -f {fastq_file} ]; then ~/bin/ascp -QT -l 300m -P33001 -i ~/bin/asperaweb_id_dsa.openssh era-fasp@fasp.sra.ebi.ac.uk:{fastq_file_path} .; fi '''
             yield cmd
 
             cmd = f'''cd {odir} && if [ ! -f {fastq_file} ]; then wget -c ftp://ftp.sra.ebi.ac.uk/{fastq_file_path}; fi '''
@@ -207,7 +207,6 @@ def run():
     cmds = get_raw_seqs(df_metainfo, args.odir)
     cmds += get_md5_sum(df_metainfo, args.odir, args.md5)
     return "\n".join(cmds),args
-
 
 if __name__ == '__main__':
     cmd, args=run()
