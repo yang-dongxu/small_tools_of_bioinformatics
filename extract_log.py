@@ -8,6 +8,7 @@ import logging
 from typing import Pattern
 
 import pandas as pd
+from decorator import decorator
 
 logger_name = "log extractor"
 logger = logging.getLogger(logger_name)
@@ -22,6 +23,9 @@ formatter = logging.Formatter(fmt, datefmt)
 sh.setFormatter(formatter)
 logger.addHandler(sh)
 
+
+#@decorator
+#def process(func, )
 
 def generate_opt():
     opt=argparse.ArgumentParser()
@@ -177,7 +181,11 @@ def run(ifiles={},projects=[]):
     for key,files in ifiles.items():
         func=functions.get(key,not_definded)
         for file, project in zip(files,projects):
-            results[project][key]=func(file)
+            try:
+                results[project][key]=func(file)
+            except:
+                results[project][key]={}
+                logger.error(f"{project} {key} has wrong! see {file}")
     return results
 
 def output(result:dict,arg:argparse.ArgumentParser,**kwargs):
