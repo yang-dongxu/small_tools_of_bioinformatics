@@ -61,7 +61,7 @@ genePredToBed ${genomeVersion}.refGene.genePredExt ${genomeVersion}.refGene.bed
 cat  ${genomeVersion}.refGene.txt | awk 'index($3,"_")==0{print $0}' | sort -k3,3 -k5,5n  > ${genomeVersion}.refGene.main.txt
 cut -f 2-11 ${genomeVersion}.refGene.main.txt > ${genomeVersion}.refGene.main.genePred
 cut -f 2-16 ${genomeVersion}.refGene.main.txt > ${genomeVersion}.refGene.main.genePredExt
-genePredToGtf -utr file ${genomeVersion}.refGene.genePredExt ${genomeVersion}.refGene.main.gtf
+genePredToGtf -utr file ${genomeVersion}.refGene.main.genePredExt ${genomeVersion}.refGene.main.gtf
 genePredToBed ${genomeVersion}.refGene.main.genePredExt ${genomeVersion}.refGene.main.bed
 
 #get table of transcipt id to gene name
