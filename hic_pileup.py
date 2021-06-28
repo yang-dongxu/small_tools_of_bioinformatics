@@ -4,6 +4,7 @@ import io
 import argparse
 import pathlib 
 import subprocess
+from straw import straw
 import logging
 
 import numpy as np
@@ -12,7 +13,7 @@ import pandas as pd
 
 logger_name = "hic pileup"
 logger = logging.getLogger(logger_name)
-logger.setLevel(logging.INFO)
+logger.setLevel(logging.DEBUG)
 
 sh=logging.StreamHandler()
 sh.setLevel(logging.DEBUG)
@@ -34,7 +35,7 @@ def generate_opt() -> argparse.ArgumentParser:
     opt.add_argument("-g","--genome",dest="genome",action="store",
         required=True,help="the chrom size file, download from uscs, tab-delimter")
     opt.add_argument("-j","--juicertools",dest="juicer",action="store",
-        default="$HOME/sources/juicer_tools", help="where your juicer_tools.jar exist")
+        default="straw", help="where your juicer_tools.jar exist")
     opt.add_argument("-o","--oname",dest="oname",action="store"
         ,required=True,help="where to store your stat file")
 
@@ -158,6 +159,29 @@ def get_dump(juicertool,hic,chr,start,end,flank,resolution,weight) -> pd.DataFra
     logger.debug(f"{df.to_csv()}".replace("\n","\n##").replace(",","\t"))
     return df
 
+def get_dump_straw(straw_matrix,start,end,flank,resolution,weight):
+    if start-flank>0:
+        start_p=start - flank
+    else:
+        start_p=0
+    end_p=end+flank
+    results=straw_matrix.query(f"region1 < {end_p} and region1 >= {start_p}  and region2 < {end_p} and region2 >= {start_p}")
+    df=results.copy()
+    df["region1"]=df["region1"]-start
+    df["region1"]=(df["region1"]/resolution).astype(int)
+    df["region2"]=df["region2"]-start
+    df["region2"]=(df["region2"]/resolution).astype(int)
+
+    dfs=[]
+    for i in range(weight):
+        dfs.append(df.copy())
+    try:
+        df=pd.concat(dfs)
+    except:
+        df=pd.DataFrame(columns=["region1","region2","intensity"])
+    logger.debug(f"{df.to_csv()}".replace("\n","\n##").replace(",","\t"))
+    return df
+
 def process(arg:argparse.ArgumentParser) -> pd.DataFrame:
     logger.info("start to generate center region...")
     df_center=get_center_bins(arg.bed,arg.genome,arg.resolution)
@@ -176,10 +200,32 @@ def process(arg:argparse.ArgumentParser) -> pd.DataFrame:
     
     return df
 
+def process_straw(arg:argparse.ArgumentParser) -> pd.DataFrame:
+    logger.info("start to generate center region by straw...")
+    df_center=get_center_bins(arg.bed,arg.genome,arg.resolution)
+    logger.info("start to dump info by straw...")
+
+    dfo=pd.DataFrame(columns=["chr","base","bin","region1","region2","intensity"])
+    for chrom, df in df_center.groupby(["chr"]):
+        matrix=straw("KR",str(arg.hic),chrom, chrom, 'BP', arg.resolution)
+        df_matrix=pd.DataFrame({"region1":matrix[0],"region2":matrix[1],"intensity":matrix[2]})
+        for _,row in df.iterrows():
+            chrom=row["chr"]
+            start=row["start"]
+            end=row["end"]
+            dft=get_dump_straw(df_matrix,start,end,arg.flank,arg.resolution,row["count"])
+            dft["chr"]=chrom
+            dft["base"]=start
+            dft["bin"]=arg.resolution
+            dfo=dfo.append(dft,ignore_index=True)
+    return dfo
 
 def run(arg:argparse.ArgumentParser):
     logger.info("start to process...")
-    df=process(arg)
+    if arg.juicer="straw":
+        df=process_straw(arg)
+    else:
+        df=process(arg)
     logger.info("dump over, start to output...")
     df.to_csv(arg.fo,sep=arg.ofs,index=False)
     logger.info("process over!")
