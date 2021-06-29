@@ -4,6 +4,7 @@ import io
 import argparse
 import pathlib 
 import subprocess
+
 from straw import straw
 import logging
 
@@ -11,9 +12,12 @@ import numpy as np
 from numpy.core.defchararray import endswith
 import pandas as pd
 
+
+from tqdm import tqdm
+
 logger_name = "hic pileup"
 logger = logging.getLogger(logger_name)
-logger.setLevel(logging.DEBUG)
+logger.setLevel(logging.INFO)
 
 sh=logging.StreamHandler()
 sh.setLevel(logging.DEBUG)
@@ -35,7 +39,7 @@ def generate_opt() -> argparse.ArgumentParser:
     opt.add_argument("-g","--genome",dest="genome",action="store",
         required=True,help="the chrom size file, download from uscs, tab-delimter")
     opt.add_argument("-j","--juicertools",dest="juicer",action="store",
-        default="straw", help="where your juicer_tools.jar exist")
+        default="straw", help="where your juicer_tools.jar exist. if not set, will used straw instead.(Recommend)")
     opt.add_argument("-o","--oname",dest="oname",action="store"
         ,required=True,help="where to store your stat file")
 
@@ -46,6 +50,9 @@ def generate_opt() -> argparse.ArgumentParser:
 
     opt.add_argument("-d","--sep",dest="ofs",action="store",
         default="\t",help="out put file delimter")
+    opt.add_argument("-c","--compression",dest="compression",action="store",
+        default="gzip",
+        help='how to compression your output file, default is gzip, choices:["infer", "gzip", "bz2", "zip", "xz", "None"] for detail see https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.DataFrame.to_csv.html')
 
     args=opt.parse_args()
     return args
@@ -83,6 +90,20 @@ def validate_opts(arg:argparse.ArgumentParser) -> argparse.ArgumentParser:
         sys.exit(1)
     logger.info(f"input genome path is {arg.genome}")
     
+    ## compression
+    if arg.compression in ["infer", "gzip", "bz2", "zip", "xz", "None"]:
+        if arg.compression == "None":
+            logger.info(f"choose compression method None. (No compression)")
+            arg.compression=None
+        elif arg.oname in ["-", "std"]:
+            logger.error("you can't output comressed out to std, set compression as None")
+            arg.compression=None
+        else:
+            logger.info(f"choose compression method {arg.compression}")
+    else:
+        logger.error("Not correct compression-format, set as gzip")
+        arg.compression="gzip"
+
     ## create output dir
     if arg.oname == "-" or arg.oname == "std":
         logger.info(f"output stat to stdout")
@@ -92,8 +113,12 @@ def validate_opts(arg:argparse.ArgumentParser) -> argparse.ArgumentParser:
         if not arg.oname.parent.exists():
             logger.warning("output dir is not exist, will be created now")
         arg.oname.parent.mkdir(parents=True,exist_ok=True)
-        arg.fo=open(arg.oname,'w')
+        if arg.compression:
+            arg.fo=open(arg.oname,'wb')
+        else:
+            arg.fo=open(arg.oname,'w')
         logger.info(f"output stat file is {arg.oname}")
+
 
     ## validate flank and resultion
     if arg.flank <0:
@@ -142,7 +167,7 @@ def get_dump(juicertool,hic,chr,start,end,flank,resolution,weight) -> pd.DataFra
         start_p=0
     end_p=end+flank
     region=f"{chr}:{start_p}:{end_p}"
-    cmd=f'''java -jar {juicertool} dump observed KR {hic} {region} {region} BP {resolution} {oname}'''
+    cmd=f'''java -jar {juicertool} dump observed KR {hic} {region} {region} BP {resolution} {oname} >> /dev/null 2>&1'''
     logger.debug(f"cmd: {cmd}")
     subprocess.run(cmd,shell=True)
     df=pd.read_csv(f"{oname}",sep="\t",names=["region1","region2","intensity"])
@@ -192,7 +217,8 @@ def process(arg:argparse.ArgumentParser) -> pd.DataFrame:
 
     logger.info("start to dump info by juicer_tools...")
     df=pd.DataFrame(columns=["chr","base","bin","region1","region2","intensity"])
-    for _,row in df_center.iterrows():
+    pbar=tqdm(range(len(df_center)))
+    for (_,row),i in zip(df_center.iterrows(),pbar):
         chrom=row["chr"]
         start=row["start"]
         end=row["end"]
@@ -201,27 +227,69 @@ def process(arg:argparse.ArgumentParser) -> pd.DataFrame:
         dft["base"]=start
         dft["bin"]=arg.resolution
         df=df.append(dft,ignore_index=True)
+        pbar.set_description("processing status ... ")
     
     return df
+
+def spread_center(df:pd.DataFrame,flank:int,resolution:int):
+    dfs=[]
+    ## build a common dataframe
+    rs=np.arange(-flank,flank+resolution,step=resolution)
+    bins=np.arange(-(flank//resolution),flank//resolution+1,1)
+    df1=pd.DataFrame({"start2":rs,"region2":bins})
+    for r,b in zip(rs,bins):
+        dfp=df1.copy()
+        dfp["start1"]=r
+        dfp["region1"]=b
+        dfs.append(dfp)
+    df_common=pd.concat(dfs)
+
+    dfs=[]
+    for _,row in df.iterrows():
+        r=row["start"]
+        for c in range(row["count"]):
+            dfp=df_common.copy()
+            dfp["start1"]=r+dfp["start1"]
+            dfp["start2"]=r+dfp["start2"]
+            dfs.append(dfp)
+    dfo=pd.concat(dfs)
+    return dfo
+
 
 def process_straw(arg:argparse.ArgumentParser) -> pd.DataFrame:
     logger.info("start to generate center region by straw...")
     df_center=get_center_bins(arg.bed,arg.genome,arg.resolution)
     logger.info("start to dump info by straw...")
 
-    dfo=pd.DataFrame(columns=["chr","base","bin","region1","region2","intensity"])
+    dfs=[]
     for chrom, df in df_center.groupby(["chr"]):
-        matrix=straw("KR",str(arg.hic),chrom, chrom, 'BP', arg.resolution)
-        df_matrix=pd.DataFrame({"region1":matrix[0],"region2":matrix[1],"intensity":matrix[2]})
-        for _,row in df.iterrows():
-            chrom=row["chr"]
-            start=row["start"]
-            end=row["end"]
-            dft=get_dump_straw(df_matrix,start,end,arg.flank,arg.resolution,row["count"])
-            dft["chr"]=chrom
-            dft["base"]=start
-            dft["bin"]=arg.resolution
-            dfo=dfo.append(dft,ignore_index=True)
+
+        logger.info(f"process chrom {chrom} now ... ")
+        logger.info(f"start to spread region on {chrom}")
+        dft=spread_center(df,arg.flank,arg.resolution)
+        logger.info("spreaded_region header: ")
+        logger.info("\n##"+dft.head().to_csv(sep="\t").replace("\n","\n##"))
+
+        logger.info(f"spread over, start to load hic file...")
+
+        try:
+            matrix=straw("KR",str(arg.hic),chrom, chrom, 'BP', arg.resolution)
+        except Exception as e:
+            logger.error(e)
+            logger.error(f"{chrom} may not exist in the hic file")
+            continue
+        df_matrix=pd.DataFrame({"start1":matrix[0],"start2":matrix[1],"intensity":matrix[2]}).sort_values(["start1","start2"])
+
+
+        logger.info(f"start to extrach info of  chrom {chrom} now ... ")
+        dft=pd.merge(df_matrix,dft,on=["start1","start2"],how="inner")
+        dft["chr"]=chrom
+        dft["bin"]=arg.resolution
+
+        dft=dft[["chr","start1","start2","region1","region2","bin","intensity"]].sort_values(["chr","start1","start2"])
+        dfs.append(dft)
+    dfo=pd.concat(dfs)
+
     return dfo
 
 def run(arg:argparse.ArgumentParser):
@@ -231,7 +299,7 @@ def run(arg:argparse.ArgumentParser):
     else:
         df=process(arg)
     logger.info("dump over, start to output...")
-    df.to_csv(arg.fo,sep=arg.ofs,index=False)
+    df.to_csv(arg.fo,sep=arg.ofs,index=False,compression=arg.compression)
     logger.info("process over!")
     return df
 
