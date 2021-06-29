@@ -66,11 +66,15 @@ def validate_opts(arg:argparse.ArgumentParser) -> argparse.ArgumentParser:
     logger.info(f"input bed file is {arg.bed}")
 
     ## juicertools
-    arg.juicer=pathlib.Path(os.path.expandvars(arg.juicer))
-    if not arg.juicer.is_file():
-        logger.critical(f"input file {arg.juicer.resolve()} is not exist!")
-        sys.exit(1)
-    logger.info(f"input juicer_tools path is {arg.juicer}")
+    if arg.juicer.strip() == "straw":
+        logger.info(f" choose straw as info extractor ...")
+        arg.juicer=="straw"
+    else:
+        arg.juicer=pathlib.Path(os.path.expandvars(arg.juicer))
+        if not arg.juicer.is_file():
+            logger.critical(f"input file {arg.juicer.resolve()} is not exist!")
+            sys.exit(1)
+        logger.info(f"input juicer_tools path is {arg.juicer}")
 
     ## genome
     arg.genome=pathlib.Path(os.path.expandvars(arg.genome))
