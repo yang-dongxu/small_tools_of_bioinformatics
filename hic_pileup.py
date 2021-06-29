@@ -40,7 +40,7 @@ def generate_opt() -> argparse.ArgumentParser:
         ,required=True,help="where to store your stat file")
 
     opt.add_argument('-r',"--resolution",dest="resolution",action="store",type=int,
-        default=25000,help="resolution you want, corresponds to BP option in juicer_tools dump ")
+        default=25000,help="resolution you want, corresponds to BP option in juicer_tools dump. must in [2500000, 1000000, 500000, 250000, 100000, 50000, 25000, 10000, 5000] ")
     opt.add_argument('-f',"--flank",dest="flank",action="store",type=int,
         default=100000,help="flank distance of center you want to observe, default is 100k bp. center position is the bin where region center is in .")
 
@@ -222,7 +222,7 @@ def process_straw(arg:argparse.ArgumentParser) -> pd.DataFrame:
 
 def run(arg:argparse.ArgumentParser):
     logger.info("start to process...")
-    if arg.juicer="straw":
+    if arg.juicer=="straw":
         df=process_straw(arg)
     else:
         df=process(arg)
