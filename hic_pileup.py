@@ -188,29 +188,6 @@ def get_dump(juicertool,hic,chr,start,end,flank,resolution,weight) -> pd.DataFra
     logger.debug(f"{df.to_csv()}".replace("\n","\n##").replace(",","\t"))
     return df
 
-def get_dump_straw(straw_matrix,start,end,flank,resolution,weight):
-    if start-flank>0:
-        start_p=start - flank
-    else:
-        start_p=0
-    end_p=end+flank
-    results=straw_matrix.query(f"region1 < {end_p} and region1 >= {start_p}  and region2 < {end_p} and region2 >= {start_p}")
-    df=results.copy()
-    df["region1"]=df["region1"]-start
-    df["region1"]=(df["region1"]/resolution).astype(int)
-    df["region2"]=df["region2"]-start
-    df["region2"]=(df["region2"]/resolution).astype(int)
-
-    dfs=[]
-    for i in range(weight):
-        dfs.append(df.copy())
-    try:
-        df=pd.concat(dfs)
-    except:
-        df=pd.DataFrame(columns=["region1","region2","intensity"])
-    logger.debug(f"{df.to_csv()}".replace("\n","\n##").replace(",","\t"))
-    return df
-
 def process(arg:argparse.ArgumentParser) -> pd.DataFrame:
     logger.info("start to generate center region...")
     df_center=get_center_bins(arg.bed,arg.genome,arg.resolution)
