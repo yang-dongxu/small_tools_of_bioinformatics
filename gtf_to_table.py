@@ -1,7 +1,7 @@
 import os
 import sys
 import argparse
-import csv
+import pandas as pd
 
 ## this script aims to transfer gtf format to table like tsv or csv, for downstream analysis.
 
@@ -33,7 +33,7 @@ else:
 
 ## start to process
 #### load data
-header_basic=["#chrom","source","feature","start","end","strand","phrase"] 
+header_basic=["#chrom","source","feature","start","end","score","strand","phrase"] 
 header_extend=[] ## attributes col name
 lineID=0
 data=[] ## lineId : { col: value}
@@ -68,10 +68,10 @@ for line in fin:
 
 #### output
 header=header_basic+header_extend
-writer=csv.DictWriter(fout,fieldnames=header,restval=".",delimiter=arg.ofs,extrasaction="ignore")
-writer.writeheader()
-writer.writerows(data)
-writer.writeheader()
+data_df = pd.DataFrame(data)[header]
+data_df.to_csv(fout, sep=arg.ofs, index=False) ###
+fout.write("##"+arg.ofs.join(header) + '\n') ###
+
 try:
     fin.close()
     fout.close()
