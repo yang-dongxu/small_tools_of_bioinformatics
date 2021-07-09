@@ -31,6 +31,7 @@ def generate_opt() -> argparse.ArgumentParser:
     parser.add_argument('-b',"--bed",action="store",type=str, dest="bed", required=True, help="the bed file your input, must have 6 columns or more, and the 4th col will be used as id in output\n")
     parser.add_argument('-w',"--bigwig",action="store",type=str, dest="bw", required=True, help="the bigwig file you want to scan\n")
     parser.add_argument('-n',"--bins",action="store",type=int,default=1,dest="bins",help="how many data points you want to scan in the each region\n")
+    parser.add_argument("--bylen",action="store_true",default=False,dest="bylen",help="if set, the length of each bin will be same, and equals to the num set by --bins or other. Defalut is false")
     parser.add_argument('-5',"--upstream",action="store",type=int,default=0,dest="upstream",help="how many bp to extense the bed region up stream (strand specific, 5' direction)\n ")
     parser.add_argument('-3',"--downstream",action="store",type=int,default=0,dest="downstream",help="how many bp to extense the bed region down stream (strand specific, 3' direction) \n")
     parser.add_argument('--5bins',action="store",type=int,default=100,dest="bins_5",help="how many bins  of 5'direction tail\n")
@@ -55,6 +56,9 @@ def validate_opt(args:argparse.ArgumentParser):
         args.bins_3=args.downstream
         logger.warning(f"turn 5bins to {args.bins_5}")
         logger.warning(f"turn 3bins to {args.bins_3}")
+
+    if args.bylen:
+        logger.info("set by length mode")
     
     if not flag:
         sys.exit(1)
@@ -75,9 +79,13 @@ def get_bw_stat(x:pd.Series,bw,nbins=1):
         outs=outs[::-1]
     return outs
 
-def process_each_part(df,bw,nbins,label):
+def process_each_part(df,bw,nbins,label,bylen=False):
     df_p=df.query("start+1 < end")
-    df_result=pd.DataFrame(list(df_p.apply(get_bw_stat,args=(bw,nbins),axis=1)))
+    if not bylen:
+        df_result=pd.DataFrame(list(df_p.apply(get_bw_stat,args=(bw,nbins),axis=1)))
+    else:
+        df_p["nbins"]=(df_p["end"]-df_p["start"])//nbins
+        df_result=pd.DataFrame(list(df_p.apply(lambda x: get_bw_stat(x,bw,x["nbins"]) ,axis=1)))
     df_result["name"]=df_p["name"]
     df_result=df_result.melt(id_vars="name",var_name="site",value_name="intensity")
     df_result["label"]=label
@@ -143,7 +151,7 @@ def process(args):
             logger.warning(f"skip label {label} becaus bins num is 0")
             continue
         logger.info(f"start to process label {label} part")
-        new_df=process_each_part(df,bw,nbin,label)
+        new_df=process_each_part(df,bw,nbin,label,bylen=args.bylen)
         results.append(new_df)
         new_df==None
         logger.info(f"label {label} part is processed!")
