@@ -69,7 +69,7 @@ def get_bw_stat(x:pd.Series,bw,nbins=1):
     strand=x["strand"]
     try:
         x["start"]=max(x["start"],0)
-        outs=bw.stats(x["chr"],int(x["start"]),int(x["end"]),nBins=nbins)
+        outs=np.array(bw.stats(x["chr"],int(x["start"]),int(x["end"]),nBins=nbins))
     except Exception as e:
         logger.error(f'Error at (chr, start, end): ({x["chr"],int(x["start"]),int(x["end"])})')
         logger.warning(f'Treat result of (chr, start, end): ({x["chr"],int(x["start"]),int(x["end"])}) as 0')
@@ -77,17 +77,23 @@ def get_bw_stat(x:pd.Series,bw,nbins=1):
         outs=np.array([np.nan]*nbins)
     if strand=="-":
         outs=outs[::-1]
+    outs[outs==None]=np.nan
+    outs[outs == np.nan ]="nan"    
     return outs
 
 def process_each_part(df,bw,nbins,label,bylen=False):
     df_p=df.query("start+1 < end")
     if not bylen:
-        df_result=pd.DataFrame(list(df_p.apply(get_bw_stat,args=(bw,nbins),axis=1)))
+        df_result=pd.DataFrame(list(df_p.apply(get_bw_stat,args=(bw,nbins),axis=1)),index=df_p["name"])
     else:
+        df_p["nbins"] = (df_p["end"] - df_p["start"]) / nbins + 0.5
+        df_p["nbins"] = df_p["nbins"].astype(int)
+        df_p["end"]=df_p["start"]+df_p["nbins"]*nbins
         df_p["nbins"]=(df_p["end"]-df_p["start"])//nbins
-        df_result=pd.DataFrame(list(df_p.apply(lambda x: get_bw_stat(x,bw,x["nbins"]) ,axis=1)))
-    df_result["name"]=df_p["name"]
-    df_result=df_result.melt(id_vars="name",var_name="site",value_name="intensity")
+        df_result=pd.DataFrame(list(df_p.apply(lambda x: get_bw_stat(x,bw,x["nbins"]) ,axis=1)),index=df_p["name"])
+    #df_result["name"]=df_p["name"]
+    df_result=df_result.reset_index().rename({"index":"name"},axis=1)
+    df_result=df_result.melt(id_vars="name",var_name="site",value_name="intensity").dropna()
     df_result["label"]=label
     df_result.fillna(value="nan")
     return df_result
