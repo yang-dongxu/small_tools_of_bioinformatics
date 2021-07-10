@@ -82,14 +82,18 @@ def get_bw_stat(x:pd.Series,bw,nbins=1):
     return outs
 
 def process_each_part(df,bw,nbins,label,bylen=False):
-    df_p=df.query("start+1 < end")
+    df_p=df.query("start+1 < end").dropna()
     if not bylen:
         df_result=pd.DataFrame(list(df_p.apply(get_bw_stat,args=(bw,nbins),axis=1)),index=df_p["name"])
     else:
-        df_p["nbins"] = (df_p["end"] - df_p["start"]) / nbins + 0.5
+        logger.info(f"nbins: {nbins}")
+        df_p["nbins"] = ((df_p["end"] - df_p["start"]) / nbins) + 0.5
         df_p["nbins"] = df_p["nbins"].astype(int)
+
+        df_p["nbins"] = df_p["nbins"].clip(lower=1)
+        df_p["nbins"] = df_p["nbins"].astype(int)
+
         df_p["end"]=df_p["start"]+df_p["nbins"]*nbins
-        df_p["nbins"]=(df_p["end"]-df_p["start"])//nbins
         df_result=pd.DataFrame(list(df_p.apply(lambda x: get_bw_stat(x,bw,x["nbins"]) ,axis=1)),index=df_p["name"])
     #df_result["name"]=df_p["name"]
     df_result=df_result.reset_index().rename({"index":"name"},axis=1)
