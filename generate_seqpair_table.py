@@ -34,8 +34,15 @@ def get_score(a: str, b: str):
 def get_commen(*args):
     end = ""
     if len(args) == 2:
+        # 从头开始比较两个文件名的相同部分，然后截取，再总尾部开始比较，再截取，将这两部分结合起来作为project name
         score = get_score(args[0], args[1])
-        end = args[0][:score]
+        end1 = args[0][:score]
+
+        a_2 = args[0][score:].split(".")[0][::-1]
+        b_2 = args[1][score:].split(".")[0][::-1]
+        score_2 = get_score(a_2, b_2)
+        end2 = a_2[:score_2][::-1]
+        end = end1 + end2
     elif len(args) == 1:
         end = args[0].split(".")[0]
     return end
