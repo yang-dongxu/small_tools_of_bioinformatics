@@ -19,7 +19,7 @@ fi
 
 ave=`bigWigInfo $1 | grep mean | cut -d ":" -f 2 `
 
-echo $ave
+echo $ave,$scale
 bigWigToBedGraph $bw $bdg
 awk '{$4=$4/a*b;print $0}' a="${ave}"  b="${scale}" $bdg  | sort -k1,1 -k2,2n > $bdg_tmp
 bedGraphToBigWig $bdg_tmp $chrom $obw
