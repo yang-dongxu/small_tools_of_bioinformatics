@@ -44,7 +44,9 @@ class Motif:
         self.score=p
         return p
     
-    def out(self,alias):
+    def out(self,alias=""):
+        if len(alias) == 0:
+            alias=self.id
         header=f">{self.project}\t{alias}\t{self.score:f}\n"
         body=pd.DataFrame(self.pwm).to_csv(sep="\t",index=False,header=False)+"\n"
         #body=self.pwm_str.replace(" ","\t")+"\n"
@@ -81,11 +83,11 @@ class MotifFile:
         else:
             f=open(self.oname,'w')
         
-        i=0
+        c=0
         for i in self.motifs:
             if i.E < pvalue:
-                i+1
-                f.write(i.out(f"{i}-{self.alias}").strip())
+                c+=1
+                f.write(i.out(f"{c}-{self.alias}").strip())
                 f.write("\n") ## no blank lines are allowd!
         f.close()
 
