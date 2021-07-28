@@ -78,8 +78,7 @@ class MotifFile:
         for i in self.motifs:
             if i.E < pvalue:
                 f.write(i.out().strip())
-                f.write("\n")
-                f.write("\n")
+                f.write("\n") ## no blank lines are allowd!
         f.close()
 
 if __name__ == "__main__":
