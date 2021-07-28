@@ -44,17 +44,22 @@ class Motif:
         self.score=p
         return p
     
-    def out(self):
-        header=f">{self.project}\t{self.id}\t{self.score:f}\n"
+    def out(self,alias):
+        header=f">{self.project}\t{alias}\t{self.score:f}\n"
         body=pd.DataFrame(self.pwm).to_csv(sep="\t",index=False,header=False)+"\n"
         #body=self.pwm_str.replace(" ","\t")+"\n"
         return header+body
 
 class MotifFile:
-    def __init__(self, iname, oname):
+    def __init__(self, iname, oname,alias):
         self.iname=iname
         self.oname=oname
         self.motifs=[]
+
+        if len(alias.strip())==0:
+            self.alias=os.path.split(self.iname)[-1].split(".")[0]
+        else:
+            self.alias=alias
 
         self.parse()
 
@@ -75,9 +80,12 @@ class MotifFile:
             f=sys.stdout
         else:
             f=open(self.oname,'w')
+        
+        i=0
         for i in self.motifs:
             if i.E < pvalue:
-                f.write(i.out().strip())
+                i+1
+                f.write(i.out(f"{i}-{self.alias}").strip())
                 f.write("\n") ## no blank lines are allowd!
         f.close()
 
@@ -87,8 +95,9 @@ if __name__ == "__main__":
     opt.add_argument("-o", "--ofile", dest="ofile", type=str, action="store", required=True, help= "output file name")
 
     opt.add_argument("-p","--pvalue", dest="pvalue", type=float, action="store", required=False, default=1e-5, help="q/p vaule you want to filter motfis")
+    opt.add_argument("-a", "--alias", dest="alias", type=str, action="store", required=False, default="", help="the alias of each motif. the 2nd part of header. ")
 
     arg=opt.parse_args()
 
-    m=MotifFile(arg.ifile, arg.ofile)
+    m=MotifFile(arg.ifile, arg.ofile,arg.alias)
     m.out(arg.pvalue)
