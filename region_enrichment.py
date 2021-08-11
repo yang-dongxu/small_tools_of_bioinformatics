@@ -178,7 +178,7 @@ def run(args) ->pd.DataFrame:
             logger.info(f"Process (q_tag,query,db_tag,db) : {(q_tag,query,db_tag,db)}.")
             enrichment=process(key,args.strand,args.genome)
             intersect_nums=get_intersect_len(query,db)
-            data={"query_tag":q_tag,"db_tag":db_tag,"query":query,"db":db,"enrichment":enrichment,"query_len":q_len[q_tag],"db_len":db_len[db_tag],"query_overlap":intersect_nums[0],"query_overlap":intersect_nums[1]}
+            data={"query_tag":q_tag,"db_tag":db_tag,"query":query,"db":db,"enrichment":enrichment,"query_num":q_len[q_tag],"db_num":db_len[db_tag],"query_overlap_num":intersect_nums[0],"db_overlap_num":intersect_nums[1]}
             logger.info(f"Process (q_tag,query,db_tag,db) : {(q_tag,query,db_tag,db)}. Enrichment: {enrichment:.3f}")
             datas.append(data)
     result=pd.DataFrame(datas)
