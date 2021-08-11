@@ -3,6 +3,7 @@ import sys
 import argparse
 import subprocess
 import logging
+from numpy.lib.arraysetops import intersect1d
 import pandas as pd
 import numpy as np
 
@@ -123,8 +124,8 @@ def process(key,strand=False,genome_size=1):
     q_tag,query,db_tag,db =key
     tmp1=f".{q_tag}.{np.random.randn()}.{np.random.randn()}.tmp"
     tmp2=f".{db_tag}.{np.random.randn()}.{np.random.randn()}.tmp"
-    cmd=f"bedtools merge -i {query} > {tmp1}"
-    cmd+=f"\n bedtools merge -i {db} > {tmp2} "
+    cmd=f"cat {query} | bedtools merge -i - > {tmp1}"
+    cmd+=f"&& cat {db} | bedtools merge -i - > {tmp2} "
     if strand:
         cmd+=f" \n bedtools intersect -a {tmp1} -b {tmp2} -s | "
     else:
@@ -145,6 +146,22 @@ def process(key,strand=False,genome_size=1):
     enrichment=(overlap/a_len)/(b_len/genome_size)
     return enrichment
 
+def get_len(file):
+    cmd=f"wc -l {file} | cut -f 1 | sed 's;^ *;;' | cut -f 1 -d ' ' "
+    p=subprocess.run(cmd,capture_output=True, text=True)
+    return int(p.stdout)
+
+def get_intersect_len(a,b):
+    cmd=f"bedtools intersect -a {a} -b {b} -wa -u | wc -l "
+    p=subprocess.run(cmd,capture_output=True, text=True)
+    a_intersected=int(p.std)
+
+    cmd=f"bedtools intersect -a {b} -b {a} -wa -u | wc -l "
+    p=subprocess.run(cmd,capture_output=True, text=True)
+    b_intersected=int(p.std)
+    return a_intersected, b_intersected
+
+
 def run(args) ->pd.DataFrame:
     '''input a class with attribute querys, db, query_tags, db_tags, and output a pd.DataFrame '''
     logger.info("start to process...")
@@ -153,12 +170,15 @@ def run(args) ->pd.DataFrame:
     query_tags=args.query_tags
     db_tags=args.db_tags
     datas=[]
+    q_len={q_tag:get_len(q) for q_tag,q in zip(querys,query_tags) }
+    db_len={db_tag:get_len(db) for db_tag,db in zip(dbs,db_tags) }
     for query,q_tag in zip(querys,query_tags):
         for db, db_tag in zip(dbs,db_tags):
             key=(q_tag,query,db_tag,db)
             logger.info(f"Process (q_tag,query,db_tag,db) : {(q_tag,query,db_tag,db)}.")
             enrichment=process(key,args.strand,args.genome)
-            data={"query_tag":q_tag,"db_tag":db_tag,"query":query,"db":db,"enrichment":enrichment}
+            intersect_nums=get_intersect_len(query,db)
+            data={"query_tag":q_tag,"db_tag":db_tag,"query":query,"db":db,"enrichment":enrichment,"query_len":q_len[q_tag],"db_len":db_len[db_tag],"query_overlap":intersect_nums[0],"query_overlap":intersect_nums[1]}
             logger.info(f"Process (q_tag,query,db_tag,db) : {(q_tag,query,db_tag,db)}. Enrichment: {enrichment:.3f}")
             datas.append(data)
     result=pd.DataFrame(datas)
