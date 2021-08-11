@@ -148,17 +148,17 @@ def process(key,strand=False,genome_size=1):
 
 def get_len(file):
     cmd=f"wc -l {file} | cut -f 1 | sed 's;^ *;;' | cut -f 1 -d ' ' "
-    p=subprocess.run(cmd,capture_output=True, text=True)
+    p=subprocess.run(cmd,shell=True,capture_output=True, text=True)
     return int(p.stdout)
 
 def get_intersect_len(a,b):
     cmd=f"bedtools intersect -a {a} -b {b} -wa -u | wc -l "
-    p=subprocess.run(cmd,capture_output=True, text=True)
-    a_intersected=int(p.std)
+    p=subprocess.run(cmd,shell=True,capture_output=True, text=True)
+    a_intersected=int(p.stdout)
 
     cmd=f"bedtools intersect -a {b} -b {a} -wa -u | wc -l "
-    p=subprocess.run(cmd,capture_output=True, text=True)
-    b_intersected=int(p.std)
+    p=subprocess.run(cmd,shell=True,capture_output=True, text=True)
+    b_intersected=int(p.stdout)
     return a_intersected, b_intersected
 
 
@@ -170,8 +170,8 @@ def run(args) ->pd.DataFrame:
     query_tags=args.query_tags
     db_tags=args.db_tags
     datas=[]
-    q_len={q_tag:get_len(q) for q_tag,q in zip(querys,query_tags) }
-    db_len={db_tag:get_len(db) for db_tag,db in zip(dbs,db_tags) }
+    q_len={q_tag:get_len(q) for q,q_tag in zip(querys,query_tags) }
+    db_len={db_tag:get_len(db) for db,db_tag in zip(dbs,db_tags) }
     for query,q_tag in zip(querys,query_tags):
         for db, db_tag in zip(dbs,db_tags):
             key=(q_tag,query,db_tag,db)
