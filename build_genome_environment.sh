@@ -79,6 +79,13 @@ cat ${genomeVersion}.refGene.main.bed  | cut -f 1-6 | \
     sort -k1,1 -k2,2n  | > ${genomeVersion}.refGene.main.distal_10k.bed
 
 
+### ensemble
+mysql --host=genome-mysql.soe.ucsc.edu --user=genome -Ne "select a.name, a.chrom, a.strand, a.txStart, a.txEnd,\
+a.cdsStart, a.cdsEnd, a.exonCount, a.exonStarts, a.exonEnds, 0 as score, b.geneSymbol from knownGene a join \
+kgXref b on a.name=b.kgID" ${genomeVersion} > ${genomeVersion}.genePred
+
+
+
 # build ceasBw index
 transfer_script="${SCRIPTS}/genePredExtToSqlite3.py"
 if [[ ! -f $transfer_script ]];then

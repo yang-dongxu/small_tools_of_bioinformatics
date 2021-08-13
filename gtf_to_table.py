@@ -70,7 +70,7 @@ for line in fin:
 header=header_basic+header_extend
 data_df = pd.DataFrame(data)[header]
 data_df.to_csv(fout, sep=arg.ofs, index=False) ###
-fout.write("##"+arg.ofs.join(header) + '\n') ###
+sys.stderr.write("##"+arg.ofs.join(header) + '\n') ###
 
 try:
     fin.close()
