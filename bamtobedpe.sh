@@ -3,7 +3,6 @@
 ibam=$1
 threads=$2
 bam_tmp="$1".tmp
-samtools sort -@ ${threads} -n  -o $bam_tmp $ibam 
-bamToBed -bedpe -i ${bam_tmp} | awk '{if($2<$5) print $1"\t"$2"\t"$6; else print $1"\t"$5"\t"$3}' | sort -k1,1 -k2,2n | uniq 
-
-rm ${bam_tmp}
+samtools sort -@ ${threads} -n  $ibam |\
+     bamToBed -bedpe -i - |\
+      awk '{if($2<$5) print $1"\t"$2"\t"$6; else print $1"\t"$5"\t"$3}' | sort -k1,1 -k2,2n | uniq 
