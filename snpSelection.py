@@ -193,7 +193,12 @@ def mkdirs(path):
 def main():
 	selection = sys.argv[1]
 	for i in sys.argv[3:7]:
-		mkdirs(i)
+		paths=i.split("/")
+		if len(paths) ==1:
+			continue
+		parent_path=os.path.join(*paths[:-1])
+		print(parent_path)
+		mkdirs(parent_path)
 	if selection == "split":
 		split_bam_file(sys.argv[2],sys.argv[3],sys.argv[4],sys.argv[5],sys.argv[6]) # bamF, snpF, strain1, strain2, mixname
 	if selection == "splitMethyl":
