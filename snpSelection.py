@@ -10,6 +10,7 @@ import subprocess
 import pandas as pd
 from scipy.stats import binom_test
 from scipy.stats import fisher_exact
+import pathlib
 
 def split_bam_file(bamF,snpF,strain1,strain2,mix):
 	snp = {}
@@ -183,22 +184,17 @@ def allelic_MPBN(infile, outfile, c1, c2, valid_count = 10):
 
 def mkdirs(path):
 	path=os.path.abspath(path)
-	if os.path.isfile(path):
-		p=os.path.split(path)[0]
-	if not os.path.exists(path):
-		os.makedirs(path)
+	os.makedirs(path,exist_ok=True)
+	print(path,"maked")
 	return True
 
 
 def main():
 	selection = sys.argv[1]
 	for i in sys.argv[3:7]:
-		paths=i.split("/")
-		if len(paths) ==1:
-			continue
-		parent_path=os.path.join(*paths[:-1])
-		print(parent_path)
-		mkdirs(parent_path)
+		path=pathlib.Path(i)
+		path.parent.mkdir(parents=True,exist_ok=True)
+		print("### ",path.parent, "\t maked")
 	if selection == "split":
 		split_bam_file(sys.argv[2],sys.argv[3],sys.argv[4],sys.argv[5],sys.argv[6]) # bamF, snpF, strain1, strain2, mixname
 	if selection == "splitMethyl":
