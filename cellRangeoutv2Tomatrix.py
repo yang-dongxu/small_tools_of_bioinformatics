@@ -19,7 +19,6 @@ def validate_opts(*args,**kwargs):
 def gzip_wrap(*args,**kwargs):
     outs=[]
     for i in args:
-        print(type(i).__bases__)
         assert isinstance(i,io.IOBase) ## has to be a file reader or writer
         if i.name.endswith("gz"):
             ig=gzip.open(i)
@@ -55,7 +54,7 @@ def main(genes,barcodes,matrix,output,transpose,sparse,symbol,*args,**kwargs):
     barcodes_list=[i.strip() for i in barcodes.read().decode().split("\n") if len(i.strip())]
     genes_list=[ (i.split()[0], i.split()[1]) for i in genes.read().decode().split("\n") if len(i.strip()) ]
     matrix_list=[i.split() for i in  matrix.readlines()[3:]]
-    
+
     #df_exp_matrix_sparse=pd.read_csv(matrix,skip_blank_lines=True,sep="\t",skiprows=3,names=["gene","cell","umi"])
     df_exp_matrix_sparse=pd.DataFrame(matrix_list,columns=["gene","cell","umi"])
     df_exp_matrix_sparse["gene"]=df_exp_matrix_sparse["gene"].astype(int)
