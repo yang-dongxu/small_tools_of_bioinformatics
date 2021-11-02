@@ -30,7 +30,7 @@ def generate(ifile,ofile,filter,groupby,sep,collasp,ifs,idir,run,suffix):
         sys.exit(1)
     
     lines = [i.strip() for i in text.split("\n") if len(i.strip())]
-    lines = [i for i in lines if re.search(filter,i)] ## filter lines
+    lines = [lines[0]]+[i for i in lines[1:] if re.search(filter,i)] ## filter lines
     text = "\n".join(lines)
 
     df = pd.read_csv(io.StringIO(text),sep=ifs)
