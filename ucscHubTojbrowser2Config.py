@@ -80,7 +80,7 @@ class Track:
             attrs["displays"][0]["maxScore"] = float(self.viewLimits.split(":")[1])
         if self.color:
             attrs["displays"][0]["renderers"] = {}
-            render = attrs["displays"][0]["renderes"]
+            render = attrs["displays"][0]["renderers"]
             render["XYPlotRenderer"] = {
                 "type": "XYPlotRenderer",
                 "posColor" : f"rgb({self.color})",
