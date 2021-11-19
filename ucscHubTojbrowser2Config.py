@@ -79,7 +79,7 @@ class Track:
             attrs["displays"][0]["minScore"] = float(self.viewLimits.split(":")[0])
             attrs["displays"][0]["maxScore"] = float(self.viewLimits.split(":")[1])
         if self.color:
-            attrs["displays"][0]["renderes"] = {}
+            attrs["displays"][0]["renderers"] = {}
             render = attrs["displays"][0]["renderes"]
             render["XYPlotRenderer"] = {
                 "type": "XYPlotRenderer",
@@ -173,7 +173,7 @@ class UcscHub:
             self.hub = r.text
         # if local, read it
         elif self.type == "local":
-            with open(self.url, 'r') as f:
+            with open(self.url[7:], 'r') as f:
                 self.hub = f.read()
 
         ## hubname: first line
@@ -271,7 +271,7 @@ def process(ucsc_hub_url,base_jbrowse_config_url,remote,output):
         baseJbrowseConfig = r.text
     # if local, read it
     elif base_jbrowse_config_url.startswith('file://'):
-        with open(base_jbrowse_config_url, 'r') as f:
+        with open(base_jbrowse_config_url[7:], 'r') as f:
             baseJbrowseConfig = f.read()
     baseJbrowseConfig = json.loads(baseJbrowseConfig)
 
