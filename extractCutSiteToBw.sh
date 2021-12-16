@@ -27,9 +27,11 @@ date +'%D %T: Parse parms over'
 date +'%D %T: Extract cut sites'
 # extract the cut site
 plusbed=$ibam.cutsite.plus.bed
-LC_COLLATE=C bamToBed -i $ibam| awk '$6=="+"' | tr ' ' $'\t' | cut -f 1-3 | grep -e "chr[0-9XYM]\{1,2\}\b" | awk 'BEGIN{OFS="\t"}{$2=$2; $3=$2+1;print $0}'  | sort -k1,1 -k2,2n > $plusbed
+LC_COLLATE=C bamToBed -i $ibam| awk '$6=="+"' | tr ' ' $'\t' | cut -f 1-3 | grep -e "chr[0-9XYM]\{1,2\}\b" | awk 'BEGIN{OFS="\t"}{$2=$2; $3=$2+1;print $0}'   > $plusbed
+bedSort  $plusbed $plusbed
 negbed=$ibam.cutsite.neg.bed
-LC_COLLATE=C bamToBed -i $ibam| awk '$6=="-"' | tr ' ' $'\t' | cut -f 1-3 | grep -e "chr[0-9XYM]\{1,2\}\b" | awk 'BEGIN{OFS="\t"}{$3=$3; $2=$3-1;print $0}' | awk '$2>0'  | sort -k1,1 -k2,2n > $negbed
+LC_COLLATE=C bamToBed -i $ibam| awk '$6=="-"' | tr ' ' $'\t' | cut -f 1-3 | grep -e "chr[0-9XYM]\{1,2\}\b" | awk 'BEGIN{OFS="\t"}{$3=$3; $2=$3-1;print $0}' | awk '$2>0'  > $negbed
+bedSort  $negbed $negbed
 
 
 date +'%D %T: Convert bed to bw'
