@@ -53,16 +53,16 @@ for line in fin:
 
     if lineID<=arg.lines: ## infer extra headers
         for i in attributes:
-            fs=i.split()
+            fs=i.strip().split()
             #print(fs)
             key=fs[0]
             value=fs[1]
             if key not in header_extend:
                 header_extend.append(key)
     for i in attributes:
+        fs=i.strip().split()
         key=fs[0]
         value=fs[1]
-        fs=i.strip().split()
         lineData[key]=value
     data.append(lineData)
 
