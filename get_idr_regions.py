@@ -141,9 +141,10 @@ def download(uid,database,url):
 @click.option('-o','--output', type=click.File(mode = 'w'), default = sys.stdout, help="where to output")
 @click.option('-r',"--remote", is_flag=True, flag_value = True, default = False, help="download from remote, use base url in url option. Result will be saved to local path in -d. If not choose, the script will try to find the file in local path")
 @click.option('-l','--url', type=str, default = 'https://alphafold.ebi.ac.uk/files/AF-%s-F1-model_v2.pdb', help="url of alphaFold database")
+@click.option("-n",'--remote_first', is_flag=True, flag_value = True, default = False, help="if set, download from remote even local file exists. Or use local file first, then download from remote if -r is choosed")
 @click.option("-d","--database", type=str, default = "alphaFoldDataBase", help="local database path")
 @click.option("-t","--threshold", type=float, default = 70, help="threshold for IDR")
-def run(uniprot_id,file,output,remote,url,database,threshold):
+def run(uniprot_id,file,output,remote,url,remote_first,database,threshold):
     if file:
         with open(uniprot_id[0]) as f:
             uniprot_id = [line.strip() for line in f]
@@ -151,14 +152,23 @@ def run(uniprot_id,file,output,remote,url,database,threshold):
         uniprot_id = uniprot_id
     logging.warning(f"input uids: {uniprot_id}")
 
-    ## if remote, download them
+    if not os.path.exists(database):
+        logging.warning(f"database path: {database}")
+        os.makedirs(database)
+
+    ## 
     files = []
-    if remote:
-        for uid in uniprot_id:
-            files.append(download(uid,database,url))
-    else:
-        for uid in uniprot_id:
+    for uid in uniprot_id:
             files.append(os.path.join(database,uid+'.pdb'))
+    ## if remote, check remoteFirst
+    if remote:
+        if remote_first:
+            for uid in uniprot_id:
+                download(uid,database,url)
+        else:
+            for uid in uniprot_id:
+                if not os.path.exists(os.path.join(database,uid+'.pdb')):
+                    download(uid,database,url)
     
     ## check exist
     for file in files:
