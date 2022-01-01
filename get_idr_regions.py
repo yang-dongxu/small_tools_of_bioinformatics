@@ -174,8 +174,9 @@ def run(uniprot_id,file,output,remote,url,remote_first,database,threshold):
     for file in files:
         if not os.path.exists(file):
             logging.error('%s not found'%file)
-    files = [file for file in files if os.path.exists(file)]
-    uniprot_id = [uid for uid in uniprot_id if os.path.exists(os.path.join(database,uid+'.pdb'))]
+    files = [file for file in files if (os.path.exists(file) and os.stat(file).st_size > 1000)]
+    getname = lambda x: os.path.join(database,x+'.pdb')
+    uniprot_id = [uid for uid in uniprot_id if (os.path.exists(getname(uid)) and os.stat(getname(uid)).st_size > 1000)]
 
     ## process part
     rows = []
