@@ -45,8 +45,8 @@ def process(input,odir,run,ifs,sample_id_col,path_col,fq1_col,fq2_col):
         path = row[path_col]
         fq1s = row[fq1_col]
         fq2s = row[fq2_col]
-        oseq1 = os.path.join(sample_odir,"{}_R1.fastq".format(sample_id))
-        oseq2 = os.path.join(sample_odir,"{}_R2.fastq".format(sample_id))
+        oseq1 = os.path.join(sample_odir,"{}_R1.fq.gz".format(sample_id))
+        oseq2 = os.path.join(sample_odir,"{}_R2.fq.gz".format(sample_id))
         
 
         if not os.path.exists(path):

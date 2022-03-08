@@ -84,7 +84,7 @@ class Stack:
             if not os.path.isdir(idir):
                 logger.error(f"your input dir {idir} does not exist! please checks it ! exit.")
                 sys.exit(1)
-            tables=os.listdir(idir)
+            tables=[os.path.join(idir,i) for i in os.listdir(idir)]
             if len(tables)==0:
                 logger.error(f"your input dir {idir} is empty! please checks it ! exit.")
                 sys.exit(1)
