@@ -51,8 +51,8 @@ def run(ifile,ofile,length,prefix):
             logger.warning(f"fragments {name} will be droped")
 
         # generate pseudo reads
-        ofile.write(f"{chrom}\t{start}\t{start+length}\t{name} 1\n")
-        ofile.write(f"{chrom}\t{end-length}\t{end}\t{name} 2\n")
+        ofile.write(f"{chrom}\t{start}\t{start+length}\t{name} /1\n")
+        ofile.write(f"{chrom}\t{end-length}\t{end}\t{name} /2\n")
     
 if __name__ == "__main__":
     run()
