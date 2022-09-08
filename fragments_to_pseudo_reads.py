@@ -48,7 +48,8 @@ def run(ifile,ofile,length,prefix):
             sys.exit(1)
         if end - start < length:
             logger.warning("pseudo reads length is longer than fragment length, line: %s",line)
-            logger.warning(f"fragments {name} will be droped")
+        if end - length < 0:
+            continue
 
         # generate pseudo reads
         ofile.write(f"{chrom}\t{start}\t{start+length}\t{name} /1\n")
