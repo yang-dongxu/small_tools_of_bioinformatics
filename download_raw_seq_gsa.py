@@ -104,7 +104,8 @@ def generate_cmd(table_download, odir, ascp, idfile, user, md5):
     cmds.append("echo 'download finished'")
     cmds.append("echo 'start to check md5'")
     md5log = md5 + ".log"
-    cmd = "cd {odir} && md5sum -c {md5} > {md5log}"
+    md5log = os.path.abspath(md5log)
+    cmd = f"cd {odir} && md5sum -c {md5} > {md5log} 2>&1  && cd - "
     cmds.append(cmd)
     return cmds
 
