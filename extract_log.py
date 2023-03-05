@@ -122,16 +122,24 @@ def parser_bowtie2(name):
 
 def parser_macs(name):
     # pattern="total\sfragments\sin\streatment:\s(\d+)}|after\sfiltering\sin\streatment:\s(\d+)|Redundant\srate\sof\streatment:\s([0-9\.]+)"
-    p1 = "total\sfragments\sin\streatment:\s(\d+)"
+    p1 = "total.* in treatment:\s(\d+)"
     p2 = "after\sfiltering\sin\streatment:\s(\d+)"
     p3 = "Redundant\srate\sof\streatment:\s([0-9\.]+)"
     pattern = "|".join([p1,p2,p3])
 
-    header=["total","filtered","redundant"]
-    indexs=[0,1,2]
-    result=parse_log(name,header,indexs,pattern)
-    for head,index in zip(header,indexs):
-        result[head]=result[head][index]
+    try:
+        header=["total","filtered","redundant"]
+        indexs=[0,1,2]
+        result=parse_log(name,header,indexs,pattern)
+        for head,index in zip(header,indexs):
+            result[head]=result[head][index]
+    except Exception as e:
+        logger.error(f"Error in parse {name} with {e}")
+        logger.warning("only grab total reads info")
+        header=["total"]
+        indexs=[0]
+        result=parse_log(name,header,indexs,p1)
+
     return result
 
 def parser_star(name):
