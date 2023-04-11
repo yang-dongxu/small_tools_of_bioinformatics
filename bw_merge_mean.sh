@@ -24,7 +24,7 @@ bigWigMerge $other_args $bdg_tmp
 echo "##### calulate mean for each site: `date +'%D %T'` #####"
 cat $bdg_tmp | awk -v num=$num 'BEGIN{OFS="\t"}{$4=$4/num; print $0}' | sort -k1,1 -k2,2n > $bdg_mean
 echo "##### turn bdg to bigwig: `date +'%D %T'` #####"
-bedGraphTobigWig $bdg_mean $chromsize $outbw
+bedGraphToBigWig $bdg_mean $chromsize $outbw
 echo "##### rm tmps: `date +'%D %T'` #####"
 rm -f $bdg_mean
 rm -f $bdg_tmp
