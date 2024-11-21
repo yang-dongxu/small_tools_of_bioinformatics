@@ -21,7 +21,7 @@ def process_group(output_file, group_name, input_files):
     Process a group, recursively handling subgroups and concatenating datasets.
     """
     combined_data = {}
-    for file_name in input_files:
+    for i, file_name in enumerate(input_files):
         with h5py.File(file_name, 'r') as f:
             group = f[group_name] if group_name in f else f['/']
             for dset_name, dataset in group.items():
@@ -33,7 +33,8 @@ def process_group(output_file, group_name, input_files):
                         combined_data[full_path].append(list(dataset[:]))
                     else:
                         combined_data[full_path].append(dataset[:])
-                elif isinstance(dataset, h5py.Group):
+                elif isinstance(dataset, h5py.Group) and i == 0:
+                    # i==0 ensures that we only process subgroups once
                     process_group(output_file, full_path, input_files)
 
     # Write combined data to the output file
