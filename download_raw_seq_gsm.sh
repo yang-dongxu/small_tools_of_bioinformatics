@@ -93,8 +93,9 @@ fi
 mkdir -p "$output_dir"
 cd "$output_dir" || exit
 
-# Loop through each GSM ID and process
-while read -r GSM_ID <&3; do
+# Loop through each line in the GSM file and process the first column
+while read -r line <&3; do
+    GSM_ID=$(echo "$line" | awk '{print $1}')
     echo "Processing $GSM_ID..."
     
     # Fetch corresponding SRX accession numbers
