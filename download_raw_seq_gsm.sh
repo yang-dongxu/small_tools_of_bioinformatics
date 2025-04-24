@@ -134,7 +134,7 @@ while read -r line <&3; do
             done
         else
             for SRR_ID in $SRR_IDS; do
-                url="https://www.ebi.ac.uk/ena/portal/api/filereport?accession=${SRR_ID}&result=read_run&fields=study_accession,sample_accession,experiment_accession,run_accession,tax_id,scientific_name,library_strategy,fastq_bytes,fastq_ftp,fastq_aspera,submitted_ftp,sra_ftp,sample_title&format=tsv&download=true&limit=0"
+                url="https://www.ebi.ac.uk/ena/portal/api/filereport?accession=${SRR_ID}&result=read_run&fields=study_accession,sample_accession,experiment_accession,run_accession,tax_id,scientific_name,library_strategy,fastq_bytes,fastq_ftp,fastq_aspera,submitted_ftp,sra_ftp,fastq_md5,sample_title&format=tsv&download=true&limit=0"
                 tsv_file="${GSM_ID}/${SRR_ID}.tsv"
                 
                 echo "Fetching: $url"
